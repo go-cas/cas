@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -12,7 +13,12 @@ import (
 func TestLearnHttpTest(t *testing.T) {
 	expected := "Hello, client"
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	url, _ := url.Parse("https://cas.host")
+	client := NewClient(&Options{
+		URL: url,
+	})
+
+	ts := httptest.NewServer(client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, expected)
 	}))
 	defer ts.Close()
