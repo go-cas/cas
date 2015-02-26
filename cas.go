@@ -6,5 +6,6 @@ import (
 
 type Options struct {
 	// Client options
-	URL *url.URL
+	URL   *url.URL
+	Store TicketStore
 }
