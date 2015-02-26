@@ -1,4 +1,4 @@
-package sanitise
+package cas
 
 import (
 	"net/url"
@@ -8,7 +8,7 @@ var (
 	urlCleanParameters = []string{"gateway", "renew", "service", "ticket"}
 )
 
-func URL(unclean *url.URL) *url.URL {
+func sanitisedURL(unclean *url.URL) *url.URL {
 	// Shouldn't be any errors parsing an existing *url.URL
 	u, _ := url.Parse(unclean.String())
 	q := u.Query()
@@ -21,6 +21,6 @@ func URL(unclean *url.URL) *url.URL {
 	return u
 }
 
-func URLString(unclean *url.URL) string {
-	return URL(unclean).String()
+func sanitisedURLString(unclean *url.URL) string {
+	return sanitisedURL(unclean).String()
 }

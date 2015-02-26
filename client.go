@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"gopkg.in/cas.v0/sanitise"
 )
 
 type Client struct {
@@ -49,7 +47,7 @@ func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 	}
 
 	q := u.Query()
-	q.Add("service", sanitise.URLString(r.URL))
+	q.Add("service", sanitisedURLString(r.URL))
 	u.RawQuery = q.Encode()
 
 	return u.String(), nil
@@ -62,7 +60,7 @@ func (c *Client) ServiceValidateUrlForService(ticket string, service *url.URL) (
 	}
 
 	q := u.Query()
-	q.Add("service", sanitise.URLString(service))
+	q.Add("service", sanitisedURLString(service))
 	q.Add("ticket", ticket)
 	u.RawQuery = q.Encode()
 
@@ -76,7 +74,7 @@ func (c *Client) ValidateUrlForService(ticket string, service *url.URL) (string,
 	}
 
 	q := u.Query()
-	q.Add("service", sanitise.URLString(service))
+	q.Add("service", sanitisedURLString(service))
 	q.Add("ticket", ticket)
 	u.RawQuery = q.Encode()
 
