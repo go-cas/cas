@@ -94,7 +94,7 @@ func (ch *clientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ticket := r.URL.Query().Get("ticket"); !loggedIn && ticket != "" {
-		if err := ch.c.validateTicket(ticket, r.URL); err != nil {
+		if err := ch.c.validateTicket(ticket, r); err != nil {
 			// log error, invalid ticket, service or something
 			// allow them up, but don't set anything to show them
 			// as logged in to the higher layers

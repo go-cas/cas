@@ -46,21 +46,47 @@ func (c *Client) HandleFunc(h func(http.ResponseWriter, *http.Request)) http.Han
 	return c.Handle(http.HandlerFunc(h))
 }
 
+func requestURL(r *http.Request) (*url.URL, error) {
+	u, err := url.Parse(r.URL.String())
+	if err != nil {
+		return nil, err
+	}
+
+	u.Host = r.Host
+	u.Scheme = "http"
+
+	if r.TLS != nil {
+		u.Scheme = "https"
+	}
+
+	return u, nil
+}
+
 func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 	u, err := c.url.Parse("login")
 	if err != nil {
 		return "", err
 	}
 
+	service, err := requestURL(r)
+	if err != nil {
+		return "", err
+	}
+
 	q := u.Query()
-	q.Add("service", sanitisedURLString(r.URL))
+	q.Add("service", sanitisedURLString(service))
 	u.RawQuery = q.Encode()
 
 	return u.String(), nil
 }
 
-func (c *Client) ServiceValidateUrlForService(ticket string, service *url.URL) (string, error) {
+func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
 	u, err := c.url.Parse("serviceValidate")
+	if err != nil {
+		return "", err
+	}
+
+	service, err := requestURL(r)
 	if err != nil {
 		return "", err
 	}
@@ -73,8 +99,13 @@ func (c *Client) ServiceValidateUrlForService(ticket string, service *url.URL) (
 	return u.String(), nil
 }
 
-func (c *Client) ValidateUrlForService(ticket string, service *url.URL) (string, error) {
+func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
 	u, err := c.url.Parse("validate")
+	if err != nil {
+		return "", err
+	}
+
+	service, err := requestURL(r)
 	if err != nil {
 		return "", err
 	}
@@ -100,12 +131,13 @@ func (c *Client) RedirectToCas(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
-func (c *Client) validateTicket(ticket string, service *url.URL) error {
+func (c *Client) validateTicket(ticket string, service *http.Request) error {
 	if glog.V(2) {
-		glog.Infof("Validating ticket %v for service %v", ticket, service)
+		serviceUrl, _ := requestURL(service)
+		glog.Infof("Validating ticket %v for service %v", ticket, serviceUrl)
 	}
 
-	u, err := c.ServiceValidateUrlForService(ticket, service)
+	u, err := c.ServiceValidateUrlForRequest(ticket, service)
 	if err != nil {
 		return err
 	}
@@ -167,8 +199,8 @@ func (c *Client) validateTicket(ticket string, service *url.URL) error {
 	return nil
 }
 
-func (c *Client) validateTicketCas1(ticket string, service *url.URL) error {
-	u, err := c.ValidateUrlForService(ticket, service)
+func (c *Client) validateTicketCas1(ticket string, service *http.Request) error {
+	u, err := c.ValidateUrlForRequest(ticket, service)
 	if err != nil {
 		return err
 	}
@@ -180,9 +212,19 @@ func (c *Client) validateTicketCas1(ticket string, service *url.URL) error {
 
 	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas.v1")
 
+	if glog.V(2) {
+		glog.Info("Attempting ticket validation with %v", r.URL)
+	}
+
 	resp, err := c.client.Do(r)
 	if err != nil {
 		return err
+	}
+
+	if glog.V(2) {
+		glog.Info("Request %v %v returned %v",
+			r.Method, r.URL,
+			resp.Status)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
@@ -198,12 +240,20 @@ func (c *Client) validateTicketCas1(ticket string, service *url.URL) error {
 		return fmt.Errorf("cas: validate ticket: %v", body)
 	}
 
+	if glog.V(2) {
+		glog.Infof("Received authentication response\n%v", body)
+	}
+
 	if body == "no\n\n" {
 		return nil // not logged in
 	}
 
 	success := &AuthenticationResponse{
 		User: body[4 : len(body)-1],
+	}
+
+	if glog.V(2) {
+		glog.Infof("Parsed ServiceResponse: %#v", success)
 	}
 
 	if err := c.store.Write(ticket, success); err != nil {
