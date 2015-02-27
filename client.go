@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/golang/glog"
 )
 
 type Client struct {
@@ -14,6 +16,10 @@ type Client struct {
 }
 
 func NewClient(options *Options) *Client {
+	if glog.V(2) {
+		glog.Infof("cas: new client with options %v", options)
+	}
+
 	var store TicketStore
 	if options.Store != nil {
 		store = options.Store
@@ -87,10 +93,18 @@ func (c *Client) RedirectToCas(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+	if glog.V(2) {
+		glog.Infof("Redirecting client to %v with status %v", u, http.StatusFound)
+	}
+
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
 func (c *Client) validateTicket(ticket string, service *url.URL) error {
+	if glog.V(2) {
+		glog.Infof("Validating ticket %v for service %v", ticket, service)
+	}
+
 	u, err := c.ServiceValidateUrlForService(ticket, service)
 	if err != nil {
 		return err
@@ -103,9 +117,19 @@ func (c *Client) validateTicket(ticket string, service *url.URL) error {
 
 	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas.v1")
 
+	if glog.V(2) {
+		glog.Infof("Attempting ticket validation with %v", r.URL)
+	}
+
 	resp, err := c.client.Do(r)
 	if err != nil {
 		return err
+	}
+
+	if glog.V(2) {
+		glog.Infof("Request %v %v returned %v",
+			r.Method, r.URL,
+			resp.Status)
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
@@ -123,9 +147,17 @@ func (c *Client) validateTicket(ticket string, service *url.URL) error {
 		return fmt.Errorf("cas: validate ticket: %v", string(body))
 	}
 
+	if glog.V(2) {
+		glog.Infof("Received authentication response\n%v", string(body))
+	}
+
 	success, err := ParseServiceResponse(body)
 	if err != nil {
 		return err
+	}
+
+	if glog.V(2) {
+		glog.Infof("Parsed ServiceResponse: %#v", success)
 	}
 
 	if err := c.store.Write(ticket, success); err != nil {
