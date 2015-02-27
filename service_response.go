@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"gopkg.in/yaml.v2"
 )
 
@@ -146,10 +147,15 @@ func addRubycasAttribute(attributes UserAttributes, key, value string) {
 				attributes.Add(key, e.(string))
 			}
 		}
-
-		return
+	case reflect.String:
+		s := reflect.ValueOf(decoded).Interface()
+		attributes.Add(key, s.(string))
+	default:
+		if glog.V(2) {
+			kind := reflect.TypeOf(decoded).Kind()
+			glog.Warningf("cas: service response: unable to parse %v value: %#v (kind: %v)", key, decoded, kind)
+		}
 	}
 
-	attributes.Add(key, "unknown")
 	return
 }

@@ -265,6 +265,9 @@ func TestUnmarshalSuccessfulServiceResponseWithRubycasExtraAttributes(t *testing
 - staff
 - faculty
 ]]></affiliation>
+	  <authenticated_at>
+      <![CDATA[--- 2015-02-26 11:11:28.239482 Z]]>
+    </authenticated_at>
 	</cas:authenticationSuccess>
 </cas:serviceResponse>`
 
@@ -281,8 +284,8 @@ func TestUnmarshalSuccessfulServiceResponseWithRubycasExtraAttributes(t *testing
 		}
 	}
 
-	if len(sr.Attributes) != 5 {
-		t.Errorf("Expected Attributes to have 5 items, got %v: %v",
+	if len(sr.Attributes) != 6 {
+		t.Errorf("Expected Attributes to have 6 items, got %v: %v",
 			len(sr.Attributes), sr.Attributes)
 	}
 
@@ -316,6 +319,10 @@ func TestUnmarshalSuccessfulServiceResponseWithRubycasExtraAttributes(t *testing
 		}
 	} else {
 		t.Errorf("Expected affiliation attribute to exist, but its !ok")
+	}
+
+	if v := sr.Attributes.Get("authenticated_at"); v != "2015-02-26 11:11:28.239482 Z" {
+		t.Errorf("Expected authenticated_at attribute to be <2015-02-26 11:11:28.239482 Z>, got <%v>", v)
 	}
 }
 
