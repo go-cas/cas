@@ -178,7 +178,7 @@ func (c *Client) validateTicket(ticket string, service *http.Request) error {
 		return err
 	}
 
-	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas.v1")
+	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas")
 
 	if glog.V(2) {
 		glog.Infof("Attempting ticket validation with %v", r.URL)
@@ -241,7 +241,7 @@ func (c *Client) validateTicketCas1(ticket string, service *http.Request) error 
 		return err
 	}
 
-	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas.v1")
+	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas")
 
 	if glog.V(2) {
 		glog.Info("Attempting ticket validation with %v", r.URL)
