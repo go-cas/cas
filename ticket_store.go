@@ -11,5 +11,6 @@ var (
 type TicketStore interface {
 	Read(id string) (*AuthenticationResponse, error)
 	Write(id string, ticket *AuthenticationResponse) error
+	Delete(id string) error
 	Clear() error
 }

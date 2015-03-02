@@ -40,6 +40,13 @@ func (s *MemoryStore) Write(id string, ticket *AuthenticationResponse) error {
 	return nil
 }
 
+func (s *MemoryStore) Delete(id string) error {
+	s.mu.Lock()
+	delete(s.store, id)
+	s.mu.Unlock()
+	return nil
+}
+
 func (s *MemoryStore) Clear() error {
 	s.mu.Lock()
 	s.store = nil

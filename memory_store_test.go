@@ -26,6 +26,14 @@ func TestMemoryStore(t *testing.T) {
 		t.Errorf("Expected retrieved AuthenticationResponse to be %v, got %v", user2, ar)
 	}
 
+	if err := store.Delete("user2"); err != nil {
+		t.Errorf("Error while deleting user2, got %v", err)
+	}
+
+	if _, err := store.Read("user2"); err != ErrInvalidTicket {
+		t.Errorf("Expected store.Read(user2) to fail")
+	}
+
 	if err := store.Clear(); err != nil {
 		t.Errorf("Expected store.Clear() to succeed, got error: %v", err)
 	}
