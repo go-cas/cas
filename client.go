@@ -420,3 +420,19 @@ func (c *Client) deleteSession(id string) {
 	delete(c.sessions, id)
 	c.mu.Unlock()
 }
+
+func (c *Client) findAndDeleteSessionWithTicket(ticket string) {
+	var id string
+	for s, t := range c.sessions {
+		if t == ticket {
+			id = s
+			break
+		}
+	}
+
+	if id == "" {
+		return
+	}
+
+	c.deleteSession(id)
+}

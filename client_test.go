@@ -431,3 +431,73 @@ func TestLogOut(t *testing.T) {
 		t.Errorf("Expected session cookie to exist")
 	}
 }
+
+func TestSingleLogOut(t *testing.T) {
+	server := &TestServer{}
+	ticket := server.NewTicket("ST-l8d6b51d8e9c4569345a30e2f904626a1066384db8694784a60b515d62f6c")
+	ticket.Service = "http://example.com/"
+	ticket.Username = "enoch.root"
+	server.AddTicket(ticket)
+	defer server.Close()
+
+	ts := httptest.NewServer(server)
+	defer ts.Close()
+
+	u, _ := url.Parse(ts.URL)
+	client := NewClient(&Options{
+		URL: u,
+	})
+
+	handler := client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAuthenticated(r) {
+			RedirectToLogin(w, r)
+			return
+		}
+
+		fmt.Fprintln(w, "Welcome, you are logged in")
+	})
+
+	// Log them in
+	req, err := http.NewRequest("GET", "http://example.com/?ticket=ST-l8d6b51d8e9c4569345a30e2f904626a1066384db8694784a60b515d62f6c", nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected First HTTP response code to be <%v>, got <%v>", http.StatusOK, w.Code)
+	}
+
+	if _, err := client.tickets.Read(ticket.Name); err != nil {
+		t.Errorf("Expected tickets.Read error to be nil, got %v", err)
+	}
+
+	// Single Logout Request
+	logoutRequest, err := xmlLogoutRequest(ticket.Name)
+	if err != nil {
+		t.Errorf("xmlLogoutRequest returned an error: %v", err)
+	}
+
+	postData := make(url.Values)
+	postData.Set("logoutRequest", string(logoutRequest))
+
+	req, err = http.NewRequest("POST", "http://example.com/any/path/in/the/application", strings.NewReader(postData.Encode()))
+	if err != nil {
+		t.Error(err)
+	}
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected Second HTTP response code to be <%v>, got <%v>", http.StatusOK, w.Code)
+	}
+
+	if _, err := client.tickets.Read(ticket.Name); err != ErrInvalidTicket {
+		t.Errorf("Expected tickets.Read error to be ErrInvalidTicket, got %v", err)
+	}
+}

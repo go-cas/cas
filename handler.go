@@ -24,7 +24,49 @@ func (ch *clientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	setClient(r, ch.c)
 	defer clear(r)
 
+	if isSingleLogoutRequest(r) {
+		ch.performSingleLogout(w, r)
+		return
+	}
+
 	ch.c.getSession(w, r)
 	ch.h.ServeHTTP(w, r)
 	return
+}
+
+func isSingleLogoutRequest(r *http.Request) bool {
+	if r.Method != "POST" {
+		return false
+	}
+
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/x-www-form-urlencoded" {
+		return false
+	}
+
+	if v := r.FormValue("logoutRequest"); v == "" {
+		return false
+	}
+
+	return true
+}
+
+func (ch *clientHandler) performSingleLogout(w http.ResponseWriter, r *http.Request) {
+	rawXML := r.FormValue("logoutRequest")
+	logoutRequest, err := parseLogoutRequest([]byte(rawXML))
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := ch.c.tickets.Delete(logoutRequest.SessionIndex); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	ch.c.deleteSession(logoutRequest.SessionIndex)
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "OK")
 }
