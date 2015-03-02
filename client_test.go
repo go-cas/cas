@@ -331,3 +331,103 @@ func TestSecondRequestShouldBeCookied(t *testing.T) {
 		t.Errorf("Expected Second HTTP response code to be <%v>, got <%v>", http.StatusOK, w.Code)
 	}
 }
+
+func TestLogOut(t *testing.T) {
+	server := &TestServer{}
+	ticket := server.NewTicket("ST-l8d6b51d8e9c4569345a30e2f904626a1066384db8694784a60b515d62f6c")
+	ticket.Service = "http://example.com/"
+	ticket.Username = "enoch.root"
+	server.AddTicket(ticket)
+	defer server.Close()
+
+	ts := httptest.NewServer(server)
+	defer ts.Close()
+
+	u, _ := url.Parse(ts.URL)
+	client := NewClient(&Options{
+		URL: u,
+	})
+
+	handler := client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAuthenticated(r) {
+			RedirectToLogin(w, r)
+			return
+		}
+
+		if r.URL.Query().Get("logout") == "1" {
+			RedirectToLogout(w, r)
+			return
+		}
+
+		fmt.Fprintln(w, "Welcome, you are logged in")
+	})
+
+	// Log them in
+	req, err := http.NewRequest("GET", "http://example.com/?ticket=ST-l8d6b51d8e9c4569345a30e2f904626a1066384db8694784a60b515d62f6c", nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected First HTTP response code to be <%v>, got <%v>", http.StatusOK, w.Code)
+	}
+
+	setCookie := w.Header().Get("Set-Cookie")
+	if !strings.HasPrefix(setCookie, sessionCookieName) {
+		t.Errorf("Expected response to have Set-Cookie header with <%v>, got <%v>",
+			sessionCookieName, setCookie)
+	}
+
+	if _, err := client.tickets.Read(ticket.Name); err != nil {
+		t.Errorf("Expected tickets.Read error to be nil, got %v", err)
+	}
+
+	// Request Logout
+	req, err = http.NewRequest("GET", "http://example.com/?logout=1", nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Parse response headers and add them to the new request
+	resp := http.Response{Header: w.Header()}
+	for _, cookie := range resp.Cookies() {
+		req.AddCookie(cookie)
+	}
+
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Errorf("Expected Second HTTP response code to be <%v>, got <%v>", http.StatusOK, w.Code)
+	}
+
+	if _, err := client.tickets.Read(ticket.Name); err != ErrInvalidTicket {
+		t.Errorf("Expected tickets.Read error to be ErrInvalidTicket, got %v", err)
+	}
+
+	expected := fmt.Sprintf("%s://%s/logout", u.Scheme, u.Host)
+	location := w.Header().Get("Location")
+	if location != expected {
+		t.Errorf("Expected Location to be %q, got %q", expected, location)
+	}
+
+	exists := false
+	resp = http.Response{Header: w.Header()}
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name != sessionCookieName {
+			continue
+		}
+
+		exists = true
+		if cookie.MaxAge != -1 {
+			t.Errorf("Expected cookie max age to be -1, got <%v> %v", cookie.MaxAge, cookie)
+		}
+	}
+
+	if !exists {
+		t.Errorf("Expected session cookie to exist")
+	}
+}

@@ -41,6 +41,17 @@ func RedirectToCas(w http.ResponseWriter, r *http.Request) {
 	RedirectToLogin(w, r)
 }
 
+func RedirectToLogout(w http.ResponseWriter, r *http.Request) {
+	c := getClient(r)
+	if c == nil {
+		err := "cas: redirect to cas failed as no client associated with request"
+		http.Error(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	c.RedirectToLogout(w, r)
+}
+
 func setAuthenticationResponse(r *http.Request, a *AuthenticationResponse) {
 	mutex.Lock()
 	defer mutex.Unlock()
