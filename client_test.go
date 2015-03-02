@@ -17,7 +17,8 @@ func TestUnauthenticatedRequestShouldRedirectToCasURL(t *testing.T) {
 
 	handler := client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !IsAuthenticated(r) {
-			RedirectToCas(w, r)
+			RedirectToLogin(w, r)
+			return
 		}
 
 		fmt.Fprintln(w, "You are logged in, but you shouldn't be, oh noes!!")
@@ -61,7 +62,8 @@ func TestInvalidServiceTicket(t *testing.T) {
 
 	handler := client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !IsAuthenticated(r) {
-			RedirectToCas(w, r)
+			RedirectToLogin(w, r)
+			return
 		}
 
 		fmt.Fprintln(w, "You are logged in, but you shouldn't be, oh noes!!")
@@ -111,6 +113,11 @@ func TestValidServiceTicket(t *testing.T) {
 
 	message := "You are logged in, welcome client"
 	handler := client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAuthenticated(r) {
+			RedirectToLogin(w, r)
+			return
+		}
+
 		fmt.Fprintln(w, message)
 	})
 
@@ -155,6 +162,11 @@ func TestGetUsernameFromServiceTicket(t *testing.T) {
 
 	message := "You are logged in, welcome"
 	handler := client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAuthenticated(r) {
+			RedirectToLogin(w, r)
+			return
+		}
+
 		user := Username(r)
 		fmt.Fprintln(w, message, user)
 	})
@@ -203,6 +215,11 @@ func TestGetAttributesFromServiceTicket(t *testing.T) {
 
 	message := "You are logged in, welcome %s%s, your account is %s"
 	handler := client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAuthenticated(r) {
+			RedirectToLogin(w, r)
+			return
+		}
+
 		user := Username(r)
 		attr := Attributes(r)
 
@@ -260,6 +277,11 @@ func TestSecondRequestShouldBeCookied(t *testing.T) {
 
 	message := "You are logged in, welcome %s%s, your account is %s"
 	handler := client.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAuthenticated(r) {
+			RedirectToLogin(w, r)
+			return
+		}
+
 		user := Username(r)
 		attr := Attributes(r)
 

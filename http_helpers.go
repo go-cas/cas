@@ -26,7 +26,7 @@ func getClient(r *http.Request) *Client {
 	return clients[r]
 }
 
-func RedirectToCas(w http.ResponseWriter, r *http.Request) {
+func RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 	c := getClient(r)
 	if c == nil {
 		err := "cas: redirect to cas failed as no client associated with request"
@@ -34,7 +34,11 @@ func RedirectToCas(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.RedirectToCas(w, r)
+	c.RedirectToLogin(w, r)
+}
+
+func RedirectToCas(w http.ResponseWriter, r *http.Request) {
+	RedirectToLogin(w, r)
 }
 
 func setAuthenticationResponse(r *http.Request, a *AuthenticationResponse) {

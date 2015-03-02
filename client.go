@@ -118,10 +118,11 @@ func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, 
 	return u.String(), nil
 }
 
-func (c *Client) RedirectToCas(w http.ResponseWriter, r *http.Request) {
+func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 	u, err := c.LoginUrlForRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if glog.V(2) {
