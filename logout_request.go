@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Represents the XML CAS Single Log Out Request data
 type logoutRequest struct {
 	XMLName         xml.Name  `xml:"urn:oasis:names:tc:SAML:2.0:protocol LogoutRequest"`
 	Version         string    `xml:"Version,attr"`

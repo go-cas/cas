@@ -2,16 +2,7 @@ package cas
 
 import (
 	"encoding/xml"
-	"errors"
 	"time"
-)
-
-var (
-	ErrAuthenticationDateUnknown                     = errors.New("cas: authentication date not included in service response")
-	ErrLongTermAuthenticationRequestTokenUsedUnknown = errors.New("cas: long term authentication request token used flag not included in service response")
-	ErrIsFromNewLoginUnknown                         = errors.New("cas: is from new login flag not included in service response")
-	ErrMemberOfUnknown                               = errors.New("cas: member of not included in service response")
-	ErrUserAttributesUnknown                         = errors.New("cas: user attributes not included in service response")
 )
 
 type xmlServiceResponse struct {

@@ -11,6 +11,13 @@ import (
 	"github.com/golang/glog"
 )
 
+// Client configuration options
+type Options struct {
+	URL   *url.URL    // URL to the CAS service
+	Store TicketStore // Custom TicketStore, if nil a MemoryStore will be used
+}
+
+// Client implements the main protocol
 type Client struct {
 	url     *url.URL
 	tickets TicketStore
@@ -20,6 +27,7 @@ type Client struct {
 	sessions map[string]string
 }
 
+// NewClient creates a Client with the provided Options.
 func NewClient(options *Options) *Client {
 	if glog.V(2) {
 		glog.Infof("cas: new client with options %v", options)
@@ -40,6 +48,7 @@ func NewClient(options *Options) *Client {
 	}
 }
 
+// Handle wraps a http.Handler to provide CAS authentication for the handler.
 func (c *Client) Handle(h http.Handler) http.Handler {
 	return &clientHandler{
 		c: c,
@@ -47,10 +56,12 @@ func (c *Client) Handle(h http.Handler) http.Handler {
 	}
 }
 
+// HandleFunc wraps a function to provide CAS authentication for the handler function.
 func (c *Client) HandleFunc(h func(http.ResponseWriter, *http.Request)) http.Handler {
 	return c.Handle(http.HandlerFunc(h))
 }
 
+// requestURL determines an absolute URL from the http.Request.
 func requestURL(r *http.Request) (*url.URL, error) {
 	u, err := url.Parse(r.URL.String())
 	if err != nil {
@@ -67,6 +78,7 @@ func requestURL(r *http.Request) (*url.URL, error) {
 	return u, nil
 }
 
+// LoginUrlForRequest determines the CAS login URL for the http.Request.
 func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 	u, err := c.url.Parse("login")
 	if err != nil {
@@ -85,6 +97,7 @@ func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 	return u.String(), nil
 }
 
+// LogoutUrlForRequest determines the CAS logout URL for the http.Request.
 func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 	u, err := c.url.Parse("logout")
 	if err != nil {
@@ -94,6 +107,7 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 	return u.String(), nil
 }
 
+// ServiceValidateUrlForRequest determines the CAS serviceValidate URL for the ticket and http.Request.
 func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
 	u, err := c.url.Parse("serviceValidate")
 	if err != nil {
@@ -113,6 +127,7 @@ func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (s
 	return u.String(), nil
 }
 
+// ValidateUrlForRequest determines the CAS validate URL for the ticket and http.Request.
 func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
 	u, err := c.url.Parse("validate")
 	if err != nil {
@@ -132,6 +147,7 @@ func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, 
 	return u.String(), nil
 }
 
+// RedirectToLogout replies to the request with a redirect URL to log out of CAS.
 func (c *Client) RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 	u, err := c.LogoutUrlForRequest(r)
 	if err != nil {
@@ -148,6 +164,7 @@ func (c *Client) RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
+// RedirectToLogout replies to the request with a redirect URL to authenticate with CAS.
 func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 	u, err := c.LoginUrlForRequest(r)
 	if err != nil {
@@ -162,6 +179,9 @@ func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
+// validateTicket performs CAS ticket validation with the given ticket and service.
+//
+// If the request returns a 404 then validateTicketCas1 will be returned.
 func (c *Client) validateTicket(ticket string, service *http.Request) error {
 	if glog.V(2) {
 		serviceUrl, _ := requestURL(service)
@@ -230,6 +250,7 @@ func (c *Client) validateTicket(ticket string, service *http.Request) error {
 	return nil
 }
 
+// validateTicketCas1 performs CAS protocol 1 ticket validation.
 func (c *Client) validateTicketCas1(ticket string, service *http.Request) error {
 	u, err := c.ValidateUrlForRequest(ticket, service)
 	if err != nil {
@@ -294,6 +315,10 @@ func (c *Client) validateTicketCas1(ticket string, service *http.Request) error 
 	return nil
 }
 
+// getSession finds or creates a session for the request.
+//
+// A cookie is set on the response if one is not provided with the request.
+// Validates the ticket if the URL parameter is provided.
 func (c *Client) getSession(w http.ResponseWriter, r *http.Request) {
 	cookie := getCookie(w, r)
 
@@ -346,6 +371,7 @@ func (c *Client) getSession(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// getCookie finds or creates the session cookie on the response.
 func getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil {
@@ -369,6 +395,7 @@ func getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	return c
 }
 
+// newSessionId generates a new opaque session identifier for use in the cookie.
 func newSessionId() string {
 	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -383,11 +410,13 @@ func newSessionId() string {
 	return string(bytes)
 }
 
+// clearCookie invalidates and removes the cookie from the client.
 func clearCookie(w http.ResponseWriter, c *http.Cookie) {
 	c.MaxAge = -1
 	http.SetCookie(w, c)
 }
 
+// setSession stores the session id to ticket mapping in the Client.
 func (c *Client) setSession(id string, ticket string) {
 	if glog.V(2) {
 		glog.Infof("Recording session, %v -> %v", id, ticket)
@@ -398,6 +427,7 @@ func (c *Client) setSession(id string, ticket string) {
 	c.mu.Unlock()
 }
 
+// clearSession removes the session from the client and clears the cookie.
 func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
 	cookie := getCookie(w, r)
 
@@ -415,12 +445,19 @@ func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
 	clearCookie(w, cookie)
 }
 
+// deleteSession removes the session from the client
 func (c *Client) deleteSession(id string) {
 	c.mu.Lock()
 	delete(c.sessions, id)
 	c.mu.Unlock()
 }
 
+// findAndDeleteSessionWithTicket removes the session from the client via Single Log Out
+//
+// When a Single Log Out request is received we receive the service ticket identidier. This
+// function loops through the sessions to find the matching session id. Once retrieved the
+// session is removed from the client. When the session is next requested the getSession
+// function will notice the session is invalid and revalidate the user.
 func (c *Client) findAndDeleteSessionWithTicket(ticket string) {
 	var id string
 	for s, t := range c.sessions {

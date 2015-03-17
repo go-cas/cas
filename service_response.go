@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// AuthenticationError Code values
 const (
 	INVALID_REQUEST            = "INVALID_REQUEST"
 	INVALID_TICKET_SPEC        = "INVALID_TICKET_SPEC"
@@ -22,33 +23,40 @@ const (
 	INTERNAL_ERROR             = "INTERNAL_ERROR"
 )
 
+// AuthenticationError represents a CAS AuthenticationFailure response
 type AuthenticationError struct {
 	Code    string
 	Message string
 }
 
-// Differentiator
+// AuthenticationError provides a differentiator for casting.
 func (e AuthenticationError) AuthenticationError() bool {
 	return true
 }
 
+// Error returns the AuthenticationError as a string
 func (e AuthenticationError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
 
+// AuthenticationResponse captures authenticated user information
 type AuthenticationResponse struct {
-	User                string
-	ProxyGrantingTicket string
-	Proxies             []string
-	AuthenticationDate  time.Time
-	IsNewLogin          bool
-	IsRememberedLogin   bool
-	MemberOf            []string
-	Attributes          UserAttributes
+	User                string         // Users login name
+	ProxyGrantingTicket string         // Proxy Granting Ticket
+	Proxies             []string       // List of proxies
+	AuthenticationDate  time.Time      // Time at which authentication was performed
+	IsNewLogin          bool           // Whether new authentication was used to grant the service ticket
+	IsRememberedLogin   bool           // Whether a long term token was used to grant the service ticket
+	MemberOf            []string       // List of groups which the user is a member of
+	Attributes          UserAttributes // Additional information about the user
 }
 
+// UserAttributes represents additional data about the user
 type UserAttributes map[string][]string
 
+// Get retrieves an attribute by name.
+//
+// Attributes are stored in arrays. Get will only return the first element.
 func (a UserAttributes) Get(name string) string {
 	if v, ok := a[name]; ok {
 		return v[0]
@@ -57,11 +65,12 @@ func (a UserAttributes) Get(name string) string {
 	return ""
 }
 
+// Add appends a new attribute.
 func (a UserAttributes) Add(name, value string) {
 	a[name] = append(a[name], value)
 }
 
-// Returns a successful response or an error
+// ParseServiceResponse returns a successful response or an error
 func ParseServiceResponse(data []byte) (*AuthenticationResponse, error) {
 	var x xmlServiceResponse
 
@@ -113,6 +122,7 @@ func ParseServiceResponse(data []byte) (*AuthenticationResponse, error) {
 	return r, nil
 }
 
+// addRubycasAttribute handles RubyCAS style additional attributes.
 func addRubycasAttribute(attributes UserAttributes, key, value string) {
 	if !strings.HasPrefix(value, "---") {
 		attributes.Add(key, value)

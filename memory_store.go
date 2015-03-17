@@ -4,11 +4,13 @@ import (
 	"sync"
 )
 
+// MemoryStore implements the TicketStore interface storing ticket data in memory.
 type MemoryStore struct {
 	mu    sync.RWMutex
 	store map[string]*AuthenticationResponse
 }
 
+// Read returns the AuthenticationResponse for a ticket
 func (s *MemoryStore) Read(id string) (*AuthenticationResponse, error) {
 	s.mu.RLock()
 
@@ -27,6 +29,7 @@ func (s *MemoryStore) Read(id string) (*AuthenticationResponse, error) {
 	return t, nil
 }
 
+// Write stores the AuthenticationResponse for a ticket
 func (s *MemoryStore) Write(id string, ticket *AuthenticationResponse) error {
 	s.mu.Lock()
 
@@ -40,6 +43,7 @@ func (s *MemoryStore) Write(id string, ticket *AuthenticationResponse) error {
 	return nil
 }
 
+// Delete removes the AuthenticationResponse for a ticket
 func (s *MemoryStore) Delete(id string) error {
 	s.mu.Lock()
 	delete(s.store, id)
@@ -47,6 +51,7 @@ func (s *MemoryStore) Delete(id string) error {
 	return nil
 }
 
+// Clear removes all ticket data
 func (s *MemoryStore) Clear() error {
 	s.mu.Lock()
 	s.store = nil
