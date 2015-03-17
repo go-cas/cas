@@ -41,11 +41,6 @@ func RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 	c.RedirectToLogin(w, r)
 }
 
-// RedirectToCas is deprecated, please call RedirectToLogin
-func RedirectToCas(w http.ResponseWriter, r *http.Request) {
-	RedirectToLogin(w, r)
-}
-
 // RedirectToLogout allows CAS protected handlers to redirect a request
 // to the CAS logout page.
 func RedirectToLogout(w http.ResponseWriter, r *http.Request) {
