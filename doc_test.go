@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"gopkg.in/cas.v0"
+	"gopkg.in/cas.v1"
 )
 
 func ExampleRedirectToLogin() {
