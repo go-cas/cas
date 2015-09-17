@@ -47,6 +47,18 @@ func TestUnauthenticatedRequestShouldRedirectToCasURL(t *testing.T) {
 		t.Errorf("Expected response to have Set-Cookie header with <%v>, got <%v>",
 			sessionCookieName, setCookie)
 	}
+
+	req.Header.Set("X-Forwarded-Proto", "https")
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusFound {
+		t.Errorf("Expected HTTP response code to be <%v>, got <%v>", http.StatusFound, w.Code)
+	}
+
+	loc = w.Header().Get("Location")
+	exp = "https://cas.example.com/login?service=https%3A%2F%2Fexample.com%2F"
+	if loc != exp {
+		t.Errorf("Expected HTTP redirect to <%s>, got <%s>", exp, loc)
+	}
 }
 
 func TestInvalidServiceTicket(t *testing.T) {
