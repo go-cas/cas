@@ -43,6 +43,7 @@ type xmlAttributes struct {
 	IsFromNewLogin                         bool      `xml:"isFromNewLogin"`
 	MemberOf                               []string  `xml:"memberOf"`
 	UserAttributes                         *xmlUserAttributes
+	ExtraAttributes                        []*xmlAnyAttribute `xml:",any"`
 }
 
 type xmlUserAttributes struct {

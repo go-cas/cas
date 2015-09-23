@@ -113,6 +113,12 @@ func ParseServiceResponse(data []byte) (*AuthenticationResponse, error) {
 				r.Attributes.Add(ea.XMLName.Local, strings.TrimSpace(ea.Value))
 			}
 		}
+
+		if a.ExtraAttributes != nil {
+			for _, ea := range a.ExtraAttributes {
+				r.Attributes.Add(ea.XMLName.Local, strings.TrimSpace(ea.Value))
+			}
+		}
 	}
 
 	for _, ea := range x.Success.ExtraAttributes {

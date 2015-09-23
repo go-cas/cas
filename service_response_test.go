@@ -182,6 +182,7 @@ func TestUnmarshalSuccessfulServiceResponseWithUserAttributesXmlAnyForm(t *testi
       <cas:memberOf>Group1</cas:memberOf>
       <cas:memberOf>Group2</cas:memberOf>
       <cas:memberOf>Group3</cas:memberOf>
+      <cas:reportsTo>theboss</cas:reportsTo>
       <cas:userAttributes>
         <cas:firstname>John</cas:firstname>
         <cas:lastname>Doe</cas:lastname>
@@ -208,8 +209,8 @@ func TestUnmarshalSuccessfulServiceResponseWithUserAttributesXmlAnyForm(t *testi
 		}
 	}
 
-	if len(sr.Attributes) != 5 {
-		t.Errorf("Expected Attributes to have 5 items, got %v: %v",
+	if len(sr.Attributes) != 6 {
+		t.Errorf("Expected Attributes to have 6 items, got %v: %v",
 			len(sr.Attributes), sr.Attributes)
 	}
 
@@ -231,6 +232,10 @@ func TestUnmarshalSuccessfulServiceResponseWithUserAttributesXmlAnyForm(t *testi
 
 	if v := sr.Attributes.Get("affiliation"); v != "staff" {
 		t.Errorf("Expected affiliation attribute to be <staff>, got <%v>", v)
+	}
+
+	if v := sr.Attributes.Get("reportsTo"); v != "theboss" {
+		t.Errorf("Expected reportsTo attribute to be <theboss>, got <%v>", v)
 	}
 
 	expectedAffiliations := []string{"staff", "faculty"}
