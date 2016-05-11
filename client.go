@@ -347,6 +347,9 @@ func (c *Client) getSession(w http.ResponseWriter, r *http.Request) {
 
 	if ticket := r.URL.Query().Get("ticket"); ticket != "" {
 		if err := c.validateTicket(ticket, r); err != nil {
+			if glog.V(2) {
+				glog.Infof("Error validating ticket: %v", err)
+			}
 			return // allow ServeHTTP()
 		}
 
