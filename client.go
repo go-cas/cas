@@ -13,8 +13,9 @@ import (
 
 // Client configuration options
 type Options struct {
-	URL   *url.URL    // URL to the CAS service
-	Store TicketStore // Custom TicketStore, if nil a MemoryStore will be used
+	URL    *url.URL     // URL to the CAS service
+	Store  TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
+	Client *http.Client // Custom http client to allow options for http connections
 }
 
 // Client implements the main protocol
@@ -40,10 +41,17 @@ func NewClient(options *Options) *Client {
 		tickets = &MemoryStore{}
 	}
 
+	var client *http.Client
+	if options.Client != nil {
+		client = options.Client
+	} else {
+		client = &http.Client{}
+	}
+
 	return &Client{
 		url:      options.URL,
 		tickets:  tickets,
-		client:   &http.Client{},
+		client:   client,
 		sessions: make(map[string]string),
 	}
 }
