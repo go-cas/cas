@@ -64,6 +64,7 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Path == "/logout" {
+		r.URL.Path = ""
 		cas.RedirectToLogout(w, r)
 		return
 	}
