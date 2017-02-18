@@ -13,9 +13,10 @@ import (
 
 // Client configuration options
 type Options struct {
-	URL    *url.URL     // URL to the CAS service
-	Store  TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
-	Client *http.Client // Custom http client to allow options for http connections
+	URL         *url.URL     // URL to the CAS service
+	Store       TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
+	Client      *http.Client // Custom http client to allow options for http connections
+	SendService bool         // Custom sendService to determine whether you need to send service param
 }
 
 // Client implements the main protocol
@@ -24,8 +25,9 @@ type Client struct {
 	tickets TicketStore
 	client  *http.Client
 
-	mu       sync.Mutex
-	sessions map[string]string
+	mu          sync.Mutex
+	sessions    map[string]string
+	sendService bool
 }
 
 // NewClient creates a Client with the provided Options.
@@ -49,10 +51,11 @@ func NewClient(options *Options) *Client {
 	}
 
 	return &Client{
-		url:      options.URL,
-		tickets:  tickets,
-		client:   client,
-		sessions: make(map[string]string),
+		url:         options.URL,
+		tickets:     tickets,
+		client:      client,
+		sessions:    make(map[string]string),
+		sendService: options.SendService,
 	}
 }
 
@@ -114,14 +117,16 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	service, err := requestURL(r)
-	if err != nil {
-		return "", err
-	}
+	if c.sendService {
+		service, err := requestURL(r)
+		if err != nil {
+			return "", err
+		}
 
-	q := u.Query()
-	q.Add("service", sanitisedURLString(service))
-	u.RawQuery = q.Encode()
+		q := u.Query()
+		q.Add("service", sanitisedURLString(service))
+		u.RawQuery = q.Encode()
+	}
 
 	return u.String(), nil
 }
