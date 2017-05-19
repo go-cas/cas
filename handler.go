@@ -25,7 +25,6 @@ func (ch *clientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setClient(r, ch.c)
-	defer clear(r)
 
 	if isSingleLogoutRequest(r) {
 		ch.performSingleLogout(w, r)

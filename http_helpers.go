@@ -3,7 +3,6 @@ package cas
 import (
 	"context"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -12,12 +11,6 @@ type key int
 const ( // emulating enums is actually pretty ugly in go.
 	clientKey key = iota
 	authenticationResponseKey
-)
-
-var (
-	mutex   sync.RWMutex
-	clients = make(map[*http.Request]*Client)
-	data    = make(map[*http.Request]*AuthenticationResponse)
 )
 
 // setClient associates a Client with a http.Request.
@@ -78,15 +71,6 @@ func getAuthenticationResponse(r *http.Request) *AuthenticationResponse {
 	} else {
 		return nil // explicitly pass along the nil to caller -- conforms to previous impl
 	}
-}
-
-// clear removes the Client and AuthenticationResponse associations of a http.Request.
-func clear(r *http.Request) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	delete(clients, r)
-	delete(data, r)
 }
 
 // IsAuthenticated indicates whether the request has been authenticated with CAS.
