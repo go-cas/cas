@@ -1,31 +1,32 @@
 package cas
 
 import (
+	"context"
 	"net/http"
-	"sync"
 	"time"
 )
 
-var (
-	mutex   sync.RWMutex
-	clients = make(map[*http.Request]*Client)
-	data    = make(map[*http.Request]*AuthenticationResponse)
+type key int
+
+const ( // emulating enums is actually pretty ugly in go.
+	clientKey key = iota
+	authenticationResponseKey
 )
 
 // setClient associates a Client with a http.Request.
 func setClient(r *http.Request, c *Client) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	clients[r] = c
+	ctx := context.WithValue(r.Context(), clientKey, c)
+	r2 := r.WithContext(ctx)
+	*r = *r2
 }
 
 // getClient retrieves the Client associated with the http.Request.
 func getClient(r *http.Request) *Client {
-	mutex.RLock()
-	defer mutex.RUnlock()
-
-	return clients[r]
+	if c := r.Context().Value(clientKey); c != nil {
+		return c.(*Client)
+	} else {
+		return nil // explicitly pass along the nil to caller -- conforms to previous impl
+	}
 }
 
 // RedirectToLogin allows CAS protected handlers to redirect a request
@@ -57,28 +58,19 @@ func RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 // setAuthenticationResponse associates an AuthenticationResponse with
 // a http.Request.
 func setAuthenticationResponse(r *http.Request, a *AuthenticationResponse) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	data[r] = a
+	ctx := context.WithValue(r.Context(), authenticationResponseKey, a)
+	r2 := r.WithContext(ctx)
+	*r = *r2
 }
 
 // getAuthenticationResponse retrieves the AuthenticationResponse associated
 // with a http.Request.
 func getAuthenticationResponse(r *http.Request) *AuthenticationResponse {
-	mutex.RLock()
-	defer mutex.RUnlock()
-
-	return data[r]
-}
-
-// clear removes the Client and AuthenticationResponse associations of a http.Request.
-func clear(r *http.Request) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	delete(clients, r)
-	delete(data, r)
+	if a := r.Context().Value(authenticationResponseKey); a != nil {
+		return a.(*AuthenticationResponse)
+	} else {
+		return nil // explicitly pass along the nil to caller -- conforms to previous impl
+	}
 }
 
 // IsAuthenticated indicates whether the request has been authenticated with CAS.
