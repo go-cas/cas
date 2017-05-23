@@ -3,7 +3,7 @@
 CAS provides a http package compatible client implementation for use with
 securing http frontends in golang.
 
-    import "gopkg.in/cas.v1"
+    import "gopkg.in/cas.v2"
 
 ## Examples and Documentation
 
