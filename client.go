@@ -132,9 +132,9 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 	return u.String(), nil
 }
 
-// ServiceValidateUrlForRequest determines the CAS serviceValidate URL for the ticket and http.Request.
+// ServiceValidateUrlForRequest determines the CAS proxyValidate URL for the ticket and http.Request.
 func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
-	u, err := c.url.Parse(path.Join(c.url.Path, "serviceValidate"))
+	u, err := c.url.Parse(path.Join(c.url.Path, "proxyValidate"))
 	if err != nil {
 		return "", err
 	}
