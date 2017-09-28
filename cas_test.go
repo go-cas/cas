@@ -82,7 +82,7 @@ func (ts *TestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		return
-	case "/serviceValidate":
+	case "/proxyValidate":
 		ticket := query.Get("ticket")
 		service := query.Get("service")
 
