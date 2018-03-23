@@ -21,12 +21,14 @@ type ServiceTicket string
 // RestOptions provide options for the RestClient
 type RestOptions struct {
 	CasURL     *url.URL
+	ServiceURL *url.URL
 	Client     *http.Client
 }
 
 // RestClient uses the rest protocol provided by cas
 type RestClient struct {
 	casUrl     *url.URL
+	serviceURL *url.URL
 	client     *http.Client
 }
 
@@ -45,6 +47,7 @@ func NewRestClient(options *RestOptions) *RestClient {
 
 	return &RestClient{
 		casUrl:      options.CasURL,
+		serviceURL:  options.ServiceURL,
 		client:      client,
 	}
 }
@@ -85,8 +88,8 @@ func (c *RestClient) RequestGrantingTicket(username string, password string) (Ti
 	return TicketGrantingTicket(tgt), nil
 }
 
-// RequestServiceTicket requests a service ticket with the TGT for the given service url
-func (c *RestClient) RequestServiceTicket(tgt TicketGrantingTicket, serviceUrl *url.URL) (ServiceTicket, error) {
+// RequestServiceTicket requests a service ticket with the TGT for the configured service url
+func (c *RestClient) RequestServiceTicket(tgt TicketGrantingTicket) (ServiceTicket, error) {
 	// request:
 	// POST /cas/v1/tickets/{TGT id} HTTP/1.0
 	// service={form encoded parameter for the service url}
@@ -96,7 +99,7 @@ func (c *RestClient) RequestServiceTicket(tgt TicketGrantingTicket, serviceUrl *
 	}
 
 	values := url.Values{}
-	values.Set("service", serviceUrl.String())
+	values.Set("service", c.serviceURL.String())
 
 	resp, err := c.client.PostForm(endpoint.String(), values)
 	if err != nil {
@@ -119,6 +122,11 @@ func (c *RestClient) RequestServiceTicket(tgt TicketGrantingTicket, serviceUrl *
 	}
 
 	return ServiceTicket(data), nil
+}
+
+// ValidateServiceTicket validates the service ticket and returns an AuthenticationResponse
+func (c *RestClient) ValidateServiceTicket(st ServiceTicket) (*AuthenticationResponse, error) {
+	return ValidateTicket(c.client, c.casUrl, string(st), c.serviceURL)
 }
 
 // Logout destroys the given granting ticket

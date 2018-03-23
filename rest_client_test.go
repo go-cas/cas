@@ -81,17 +81,19 @@ func TestRequestServiceTicket(t *testing.T) {
 		t.Error("failed to create cas url from test server")
 	}
 
-	restClient := NewRestClient(&RestOptions{
-		CasURL: casUrl,
-		Client: server.Client(),
-	})
 
 	serviceUrl, err := url.Parse("https://hitchhiker.com/heartOfGold")
 	if err != nil {
 		t.Error("failed to create service url")
 	}
 
-	st, err := restClient.RequestServiceTicket(TicketGrantingTicket("TGT-abc"), serviceUrl)
+	restClient := NewRestClient(&RestOptions{
+		CasURL: casUrl,
+		ServiceURL: serviceUrl,
+		Client: server.Client(),
+	})
+
+	st, err := restClient.RequestServiceTicket(TicketGrantingTicket("TGT-abc"))
 	if err != nil {
 		t.Errorf("requesting service ticket failed: %v", err)
 	}
@@ -100,7 +102,7 @@ func TestRequestServiceTicket(t *testing.T) {
 		t.Errorf("expected %s but received %v", "ST-123", st)
 	}
 
-	_, err = restClient.RequestServiceTicket(TicketGrantingTicket("TGT-xyz"), serviceUrl)
+	_, err = restClient.RequestServiceTicket(TicketGrantingTicket("TGT-xyz"))
 	if err == nil {
 		t.Errorf("service ticket request should fail for TGT-xyz")
 	}
@@ -110,9 +112,47 @@ func TestRequestServiceTicket(t *testing.T) {
 		t.Error("failed to create service url")
 	}
 
-	_, err = restClient.RequestServiceTicket(TicketGrantingTicket("TGT-abc"), serviceUrl)
+	restClient = NewRestClient(&RestOptions{
+		CasURL: casUrl,
+		ServiceURL: serviceUrl,
+		Client: server.Client(),
+	})
+
+	_, err = restClient.RequestServiceTicket(TicketGrantingTicket("TGT-abc"))
 	if err == nil {
 		t.Errorf("service ticket request should fail for this service")
+	}
+}
+
+func TestValidateService(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/cas/v1/tickets/TGT-abc" || r.Method != "DELETE" {
+			w.WriteHeader(404)
+			return
+		}
+
+		w.WriteHeader(200)
+	}))
+	defer server.Close()
+
+	casUrl, err := url.Parse(server.URL + "/cas/")
+	if err != nil {
+		t.Error("failed to create cas url from test server")
+	}
+
+	restClient := NewRestClient(&RestOptions{
+		CasURL: casUrl,
+		Client: server.Client(),
+	})
+
+	err = restClient.Logout(TicketGrantingTicket("TGT-abc"))
+	if err != nil {
+		t.Errorf("logout failed %v", err)
+	}
+
+	err = restClient.Logout(TicketGrantingTicket("TGT-xyz"))
+	if err == nil {
+		t.Errorf("logout should failed for this TGT")
 	}
 }
 
