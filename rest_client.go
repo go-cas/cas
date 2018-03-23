@@ -54,6 +54,19 @@ func NewRestClient(options *RestOptions) *RestClient {
 	}
 }
 
+// Handle wraps a http.Handler to provide CAS Rest authentication for the handler.
+func (c *RestClient) Handle(h http.Handler) http.Handler {
+	return &restClientHandler{
+		c: c,
+		h: h,
+	}
+}
+
+// HandleFunc wraps a function to provide CAS Rest authentication for the handler function.
+func (c *RestClient) HandleFunc(h func(http.ResponseWriter, *http.Request)) http.Handler {
+	return c.Handle(http.HandlerFunc(h))
+}
+
 // RequestGrantingTicket returns a new TGT, if the username and password authentication was successful
 func (c *RestClient) RequestGrantingTicket(username string, password string) (TicketGrantingTicket, error) {
 	// request:
