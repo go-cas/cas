@@ -27,9 +27,10 @@ type RestOptions struct {
 
 // RestClient uses the rest protocol provided by cas
 type RestClient struct {
-	casUrl     *url.URL
-	serviceURL *url.URL
-	client     *http.Client
+	casUrl      *url.URL
+	serviceURL  *url.URL
+	client      *http.Client
+	stValidator *ServiceTicketValidator
 }
 
 // NewRestClient creates a new client for the cas rest protocol with the provided options
@@ -49,6 +50,7 @@ func NewRestClient(options *RestOptions) *RestClient {
 		casUrl:      options.CasURL,
 		serviceURL:  options.ServiceURL,
 		client:      client,
+		stValidator: NewServiceTicketValidator(client, options.CasURL),
 	}
 }
 
@@ -126,7 +128,7 @@ func (c *RestClient) RequestServiceTicket(tgt TicketGrantingTicket) (ServiceTick
 
 // ValidateServiceTicket validates the service ticket and returns an AuthenticationResponse
 func (c *RestClient) ValidateServiceTicket(st ServiceTicket) (*AuthenticationResponse, error) {
-	return ValidateTicket(c.client, c.casUrl, string(st), c.serviceURL)
+	return c.stValidator.ValidateTicket(c.serviceURL, string(st))
 }
 
 // Logout destroys the given granting ticket

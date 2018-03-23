@@ -28,6 +28,8 @@ type Client struct {
 	mu          sync.Mutex
 	sessions    map[string]string
 	sendService bool
+
+	stValidator *ServiceTicketValidator
 }
 
 // NewClient creates a Client with the provided Options.
@@ -56,6 +58,7 @@ func NewClient(options *Options) *Client {
 		client:      client,
 		sessions:    make(map[string]string),
 		sendService: options.SendService,
+		stValidator: NewServiceTicketValidator(client, options.URL),
 	}
 }
 
@@ -132,21 +135,23 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 }
 
 // ServiceValidateUrlForRequest determines the CAS serviceValidate URL for the ticket and http.Request.
+// TODO why is this function exposed?
 func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
 	service, err := requestURL(r)
 	if err != nil {
 		return "", err
 	}
-	return serviceValidateUrl(c.url, ticket, service)
+	return c.stValidator.ServiceValidateUrl(service, ticket)
 }
 
 // ValidateUrlForRequest determines the CAS validate URL for the ticket and http.Request.
+// TODO why is this function exposed?
 func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
 	service, err := requestURL(r)
 	if err != nil {
 		return "", err
 	}
-	return validateUrl(c.url, ticket, service)
+	return c.stValidator.ValidateUrl(service, ticket)
 }
 
 // RedirectToLogout replies to the request with a redirect URL to log out of CAS.
@@ -182,15 +187,13 @@ func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // validateTicket performs CAS ticket validation with the given ticket and service.
-//
-// If the request returns a 404 then validateTicketCas1 will be returned.
 func (c *Client) validateTicket(ticket string, service *http.Request) error {
 	serviceUrl, err := requestURL(service)
 	if err != nil {
 		return err
 	}
 
-	success, err := ValidateTicket(c.client, c.url, ticket, serviceUrl)
+	success, err := c.stValidator.ValidateTicket(serviceUrl, ticket)
 	if err != nil {
 		return err
 	}

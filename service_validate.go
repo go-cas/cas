@@ -9,12 +9,28 @@ import (
 	"fmt"
 )
 
-func ValidateTicket(client *http.Client, casUrl *url.URL, ticket string, serviceUrl *url.URL) (*AuthenticationResponse, error) {
+func NewServiceTicketValidator(client *http.Client, casUrl *url.URL) *ServiceTicketValidator {
+	return &ServiceTicketValidator{
+		client: client,
+		casUrl: casUrl,
+	}
+}
+
+// ServiceTicketValidator is responsible for the validation of a service ticket
+type ServiceTicketValidator struct {
+	client *http.Client
+	casUrl *url.URL
+}
+
+// ValidateTicket validates the service ticket for the given server. The method will try to use the service validate
+// endpoint of the cas >= 2 protocol, if the service validate endpoint not available, the function will use the cas 1
+// validate endpoint.
+func (validator *ServiceTicketValidator) ValidateTicket(serviceUrl *url.URL, ticket string) (*AuthenticationResponse, error) {
 	if glog.V(2) {
 		glog.Infof("Validating ticket %v for service %v", ticket, serviceUrl)
 	}
 
-	u, err := serviceValidateUrl(casUrl, ticket, serviceUrl)
+	u, err := validator.ServiceValidateUrl(serviceUrl, ticket)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +46,7 @@ func ValidateTicket(client *http.Client, casUrl *url.URL, ticket string, service
 		glog.Infof("Attempting ticket validation with %v", r.URL)
 	}
 
-	resp, err := client.Do(r)
+	resp, err := validator.client.Do(r)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +58,7 @@ func ValidateTicket(client *http.Client, casUrl *url.URL, ticket string, service
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return validateTicketCas1(client, casUrl, ticket, serviceUrl)
+		return validator.validateTicketCas1(serviceUrl, ticket)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -72,8 +88,10 @@ func ValidateTicket(client *http.Client, casUrl *url.URL, ticket string, service
 	return success, nil
 }
 
-func serviceValidateUrl(casUrl *url.URL, ticket string, serviceUrl *url.URL) (string, error) {
-	u, err := casUrl.Parse(path.Join(casUrl.Path, "serviceValidate"))
+// ServiceValidateUrl creates the service validation url for the cas >= 2 protocol.
+// TODO the function is only exposed, because of the clients ServiceValidateUrl function
+func (validator *ServiceTicketValidator) ServiceValidateUrl(serviceUrl *url.URL, ticket string) (string, error) {
+	u, err := validator.casUrl.Parse(path.Join(validator.casUrl.Path, "serviceValidate"))
 	if err != nil {
 		return "", err
 	}
@@ -86,22 +104,8 @@ func serviceValidateUrl(casUrl *url.URL, ticket string, serviceUrl *url.URL) (st
 	return u.String(), nil
 }
 
-func validateUrl(casUrl *url.URL, ticket string, serviceUrl *url.URL) (string, error) {
-	u, err := casUrl.Parse(path.Join(casUrl.Path, "validate"))
-	if err != nil {
-		return "", err
-	}
-
-	q := u.Query()
-	q.Add("service", sanitisedURLString(serviceUrl))
-	q.Add("ticket", ticket)
-	u.RawQuery = q.Encode()
-
-	return u.String(), nil
-}
-
-func validateTicketCas1(client *http.Client, casUrl *url.URL, ticket string, serviceUrl *url.URL) (*AuthenticationResponse, error) {
-	u, err := validateUrl(casUrl, ticket, serviceUrl)
+func (validator *ServiceTicketValidator) validateTicketCas1(serviceUrl *url.URL, ticket string) (*AuthenticationResponse, error) {
+	u, err := validator.ValidateUrl(serviceUrl, ticket)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +121,7 @@ func validateTicketCas1(client *http.Client, casUrl *url.URL, ticket string, ser
 		glog.Info("Attempting ticket validation with %v", r.URL)
 	}
 
-	resp, err := client.Do(r)
+	resp, err := validator.client.Do(r)
 	if err != nil {
 		return nil, err
 	}
@@ -158,4 +162,20 @@ func validateTicketCas1(client *http.Client, casUrl *url.URL, ticket string, ser
 	}
 
 	return success, nil
+}
+
+// ValidateUrl creates the validation url for the cas >= 1 protocol.
+// TODO the function is only exposed, because of the clients ValidateUrl function
+func (validator *ServiceTicketValidator) ValidateUrl(serviceUrl *url.URL, ticket string) (string, error) {
+	u, err := validator.casUrl.Parse(path.Join(validator.casUrl.Path, "validate"))
+	if err != nil {
+		return "", err
+	}
+
+	q := u.Query()
+	q.Add("service", sanitisedURLString(serviceUrl))
+	q.Add("ticket", ticket)
+	u.RawQuery = q.Encode()
+
+	return u.String(), nil
 }
