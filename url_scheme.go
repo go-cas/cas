@@ -11,6 +11,9 @@ type URLScheme interface {
 	Logout() (*url.URL, error)
 	Validate() (*url.URL, error)
 	ServiceValidate() (*url.URL, error)
+	RestGrantingTicket() (*url.URL, error)
+	RestServiceTicket(tgt string) (*url.URL, error)
+	RestLogout(tgt string) (*url.URL, error)
 }
 
 // NewDefaultURLScheme creates a URLScheme which uses the cas default urls
@@ -21,6 +24,7 @@ func NewDefaultURLScheme(base *url.URL) *DefaultURLScheme {
 		LogoutPath:          "logout",
 		ValidatePath:        "validate",
 		ServiceValidatePath: "serviceValidate",
+		RestEndpoint:        path.Join("v1", "tickets"),
 	}
 }
 
@@ -32,6 +36,7 @@ type DefaultURLScheme struct {
 	LogoutPath          string
 	ValidatePath        string
 	ServiceValidatePath string
+	RestEndpoint        string
 }
 
 // Login returns the url for the cas login page
@@ -52,6 +57,21 @@ func (scheme *DefaultURLScheme) Validate() (*url.URL, error) {
 // ServiceValidate returns the url for the service validation endpoint
 func (scheme *DefaultURLScheme) ServiceValidate() (*url.URL, error) {
 	return scheme.createURL(scheme.ServiceValidatePath)
+}
+
+// RestGrantingTicket returns the url for requesting an granting ticket via rest api
+func (scheme *DefaultURLScheme) RestGrantingTicket() (*url.URL, error) {
+	return scheme.createURL(scheme.RestEndpoint)
+}
+
+// RestServiceTicket returns the url for requesting an service ticket via rest api
+func (scheme *DefaultURLScheme) RestServiceTicket(tgt string) (*url.URL, error) {
+	return scheme.createURL(path.Join(scheme.RestEndpoint, tgt))
+}
+
+// RestLogout returns the url for destroying an granting ticket via rest api
+func (scheme *DefaultURLScheme) RestLogout(tgt string) (*url.URL, error) {
+	return scheme.createURL(path.Join(scheme.RestEndpoint, tgt))
 }
 
 func (scheme *DefaultURLScheme) createURL(urlPath string) (*url.URL, error) {
