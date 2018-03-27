@@ -3,7 +3,6 @@ package cas
 import (
 	"crypto/rand"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
@@ -29,6 +28,8 @@ type Client struct {
 	mu          sync.Mutex
 	sessions    map[string]string
 	sendService bool
+
+	stValidator *ServiceTicketValidator
 }
 
 // NewClient creates a Client with the provided Options.
@@ -64,6 +65,7 @@ func NewClient(options *Options) *Client {
 		urlScheme:   urlScheme,
 		sessions:    make(map[string]string),
 		sendService: options.SendService,
+		stValidator: NewServiceTicketValidator(client, options.URL),
 	}
 }
 
@@ -141,42 +143,20 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 
 // ServiceValidateUrlForRequest determines the CAS serviceValidate URL for the ticket and http.Request.
 func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
-	u, err := c.urlScheme.ServiceValidate()
-	if err != nil {
-		return "", err
-	}
-
 	service, err := requestURL(r)
 	if err != nil {
 		return "", err
 	}
-
-	q := u.Query()
-	q.Add("service", sanitisedURLString(service))
-	q.Add("ticket", ticket)
-	u.RawQuery = q.Encode()
-
-	return u.String(), nil
+	return c.stValidator.ServiceValidateUrl(service, ticket)
 }
 
 // ValidateUrlForRequest determines the CAS validate URL for the ticket and http.Request.
 func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
-	u, err := c.urlScheme.Validate()
-	if err != nil {
-		return "", err
-	}
-
 	service, err := requestURL(r)
 	if err != nil {
 		return "", err
 	}
-
-	q := u.Query()
-	q.Add("service", sanitisedURLString(service))
-	q.Add("ticket", ticket)
-	u.RawQuery = q.Encode()
-
-	return u.String(), nil
+	return c.stValidator.ValidateUrl(service, ticket)
 }
 
 // RedirectToLogout replies to the request with a redirect URL to log out of CAS.
@@ -212,132 +192,15 @@ func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // validateTicket performs CAS ticket validation with the given ticket and service.
-//
-// If the request returns a 404 then validateTicketCas1 will be returned.
 func (c *Client) validateTicket(ticket string, service *http.Request) error {
-	if glog.V(2) {
-		serviceUrl, _ := requestURL(service)
-		glog.Infof("Validating ticket %v for service %v", ticket, serviceUrl)
-	}
-
-	u, err := c.ServiceValidateUrlForRequest(ticket, service)
+	serviceUrl, err := requestURL(service)
 	if err != nil {
 		return err
 	}
 
-	r, err := http.NewRequest("GET", u, nil)
+	success, err := c.stValidator.ValidateTicket(serviceUrl, ticket)
 	if err != nil {
 		return err
-	}
-
-	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas")
-
-	if glog.V(2) {
-		glog.Infof("Attempting ticket validation with %v", r.URL)
-	}
-
-	resp, err := c.client.Do(r)
-	if err != nil {
-		return err
-	}
-
-	if glog.V(2) {
-		glog.Infof("Request %v %v returned %v",
-			r.Method, r.URL,
-			resp.Status)
-	}
-
-	if resp.StatusCode == http.StatusNotFound {
-		return c.validateTicketCas1(ticket, service)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("cas: validate ticket: %v", string(body))
-	}
-
-	if glog.V(2) {
-		glog.Infof("Received authentication response\n%v", string(body))
-	}
-
-	success, err := ParseServiceResponse(body)
-	if err != nil {
-		return err
-	}
-
-	if glog.V(2) {
-		glog.Infof("Parsed ServiceResponse: %#v", success)
-	}
-
-	if err := c.tickets.Write(ticket, success); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// validateTicketCas1 performs CAS protocol 1 ticket validation.
-func (c *Client) validateTicketCas1(ticket string, service *http.Request) error {
-	u, err := c.ValidateUrlForRequest(ticket, service)
-	if err != nil {
-		return err
-	}
-
-	r, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return err
-	}
-
-	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas")
-
-	if glog.V(2) {
-		glog.Info("Attempting ticket validation with %v", r.URL)
-	}
-
-	resp, err := c.client.Do(r)
-	if err != nil {
-		return err
-	}
-
-	if glog.V(2) {
-		glog.Info("Request %v %v returned %v",
-			r.Method, r.URL,
-			resp.Status)
-	}
-
-	data, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-
-	if err != nil {
-		return err
-	}
-
-	body := string(data)
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("cas: validate ticket: %v", body)
-	}
-
-	if glog.V(2) {
-		glog.Infof("Received authentication response\n%v", body)
-	}
-
-	if body == "no\n\n" {
-		return nil // not logged in
-	}
-
-	success := &AuthenticationResponse{
-		User: body[4 : len(body)-1],
-	}
-
-	if glog.V(2) {
-		glog.Infof("Parsed ServiceResponse: %#v", success)
 	}
 
 	if err := c.tickets.Write(ticket, success); err != nil {

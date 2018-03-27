@@ -17,6 +17,12 @@ func TestDefaultURLScheme(t *testing.T) {
 	assertUrl(t, "/cas/validate", u, err)
 	u, err = scheme.ServiceValidate()
 	assertUrl(t, "/cas/serviceValidate", u, err)
+	u, err = scheme.RestGrantingTicket()
+	assertUrl(t, "/cas/v1/tickets", u, err)
+	u, err = scheme.RestServiceTicket("TGT-123")
+	assertUrl(t, "/cas/v1/tickets/TGT-123", u, err)
+	u, err = scheme.RestLogout("TGT-123")
+	assertUrl(t, "/cas/v1/tickets/TGT-123", u, err)
 }
 
 func assertUrl(t *testing.T, expected string, u *url.URL, err error) {
