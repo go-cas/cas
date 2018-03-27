@@ -71,3 +71,24 @@ func TestXmlLayoutRequest(t *testing.T) {
 		t.Errorf("Expected XML to be \n%v\ngot\n%v\n", expected, string(bytes))
 	}
 }
+
+func TestParseLogoutRequestWithISO8601(t *testing.T) {
+	xml := `<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+  ID="8r7834d6r78346s7823d46678235d" Version="2.0" IssueInstant="2018-03-22T10:52:57Z">
+  <saml:NameID xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    @NOT_USED@
+  </saml:NameID>
+  <samlp:SessionIndex>ST-io34f34vr7823vcr82346r782c4b78i2364i76cvr72364rv7263</samlp:SessionIndex>
+</samlp:LogoutRequest>`
+
+	l, err := parseLogoutRequest([]byte(xml))
+	if err != nil {
+		t.Errorf("parseLogoutRequest returned error: %v", err)
+	}
+
+	instant := time.Date(2018, 03, 22, 10, 52, 57, 0, time.UTC)
+	if !instant.Equal(l.IssueInstant) {
+		t.Errorf("Expected IssueInstant to be <%v>, got <%v>",
+			instant, l.IssueInstant)
+	}
+}

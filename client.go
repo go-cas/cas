@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path"
 	"sync"
 
 	"github.com/golang/glog"
@@ -17,13 +16,14 @@ type Options struct {
 	Store       TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
 	Client      *http.Client // Custom http client to allow options for http connections
 	SendService bool         // Custom sendService to determine whether you need to send service param
+	URLScheme 	URLScheme	 // Custom url scheme, can be used to modify the request urls for the client
 }
 
 // Client implements the main protocol
 type Client struct {
-	url     *url.URL
-	tickets TicketStore
-	client  *http.Client
+	tickets   TicketStore
+	client    *http.Client
+	urlScheme URLScheme
 
 	mu          sync.Mutex
 	sessions    map[string]string
@@ -45,6 +45,13 @@ func NewClient(options *Options) *Client {
 		tickets = &MemoryStore{}
 	}
 
+	var urlScheme URLScheme
+	if options.URLScheme != nil {
+		urlScheme = options.URLScheme
+	} else {
+		urlScheme = NewDefaultURLScheme(options.URL)
+	}
+
 	var client *http.Client
 	if options.Client != nil {
 		client = options.Client
@@ -53,9 +60,9 @@ func NewClient(options *Options) *Client {
 	}
 
 	return &Client{
-		url:         options.URL,
 		tickets:     tickets,
 		client:      client,
+		urlScheme:   urlScheme,
 		sessions:    make(map[string]string),
 		sendService: options.SendService,
 		stValidator: NewServiceTicketValidator(client, options.URL),
@@ -96,7 +103,7 @@ func requestURL(r *http.Request) (*url.URL, error) {
 
 // LoginUrlForRequest determines the CAS login URL for the http.Request.
 func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
-	u, err := c.url.Parse(path.Join(c.url.Path, "login"))
+	u, err := c.urlScheme.Login()
 	if err != nil {
 		return "", err
 	}
@@ -115,7 +122,7 @@ func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 
 // LogoutUrlForRequest determines the CAS logout URL for the http.Request.
 func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
-	u, err := c.url.Parse(path.Join(c.url.Path, "logout"))
+	u, err := c.urlScheme.Logout()
 	if err != nil {
 		return "", err
 	}
@@ -135,7 +142,6 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 }
 
 // ServiceValidateUrlForRequest determines the CAS serviceValidate URL for the ticket and http.Request.
-// TODO why is this function exposed?
 func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
 	service, err := requestURL(r)
 	if err != nil {
@@ -145,7 +151,6 @@ func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (s
 }
 
 // ValidateUrlForRequest determines the CAS validate URL for the ticket and http.Request.
-// TODO why is this function exposed?
 func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, error) {
 	service, err := requestURL(r)
 	if err != nil {

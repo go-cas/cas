@@ -24,7 +24,7 @@ func parseLogoutRequest(data []byte) (*logoutRequest, error) {
 		return nil, err
 	}
 
-	t, err := time.Parse(time.RFC1123Z, l.RawIssueInstant)
+	t, err := parseDate(l.RawIssueInstant)
 	if err != nil {
 		return nil, err
 	}
@@ -34,6 +34,18 @@ func parseLogoutRequest(data []byte) (*logoutRequest, error) {
 	l.SessionIndex = strings.TrimSpace(l.SessionIndex)
 
 	return l, nil
+}
+
+func parseDate(raw string) (time.Time, error) {
+	t, err := time.Parse(time.RFC1123Z, raw)
+	if err != nil {
+		// if RFC1123Z does not match, we will try iso8601
+		t, err = time.Parse("2006-01-02T15:04:05Z0700", raw)
+		if err != nil {
+			return t, err
+		}
+	}
+	return t, nil
 }
 
 func newLogoutRequestId() string {
