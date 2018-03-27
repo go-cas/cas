@@ -18,6 +18,7 @@ type Options struct {
 	Store       TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
 	Client      *http.Client // Custom http client to allow options for http connections
 	SendService bool         // Custom sendService to determine whether you need to send service param
+	FixService  *url.URL     // Custom fixService to force a service url for proxy or other similar cases
 }
 
 // Client implements the main protocol
@@ -29,6 +30,7 @@ type Client struct {
 	mu          sync.Mutex
 	sessions    map[string]string
 	sendService bool
+	fixService  *url.URL
 }
 
 // NewClient creates a Client with the provided Options.
@@ -57,6 +59,7 @@ func NewClient(options *Options) *Client {
 		client:      client,
 		sessions:    make(map[string]string),
 		sendService: options.SendService,
+		fixService:  options.FixService,
 	}
 }
 
@@ -74,7 +77,16 @@ func (c *Client) HandleFunc(h func(http.ResponseWriter, *http.Request)) http.Han
 }
 
 // requestURL determines an absolute URL from the http.Request.
-func requestURL(r *http.Request) (*url.URL, error) {
+func requestURL(r *http.Request, f *url.URL) (*url.URL, error) {
+	if f != nil {
+		fu, e := url.Parse(f.String())
+		if e != nil {
+			return nil, e
+		}
+
+		return fu, nil
+	}
+
 	u, err := url.Parse(r.URL.String())
 	if err != nil {
 		return nil, err
@@ -99,7 +111,7 @@ func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	service, err := requestURL(r)
+	service, err := requestURL(r, c.fixService)
 	if err != nil {
 		return "", err
 	}
@@ -119,7 +131,7 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 	}
 
 	if c.sendService {
-		service, err := requestURL(r)
+		service, err := requestURL(r, c.fixService)
 		if err != nil {
 			return "", err
 		}
@@ -139,7 +151,7 @@ func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (s
 		return "", err
 	}
 
-	service, err := requestURL(r)
+	service, err := requestURL(r, c.fixService)
 	if err != nil {
 		return "", err
 	}
@@ -159,7 +171,7 @@ func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, 
 		return "", err
 	}
 
-	service, err := requestURL(r)
+	service, err := requestURL(r, c.fixService)
 	if err != nil {
 		return "", err
 	}
@@ -209,7 +221,7 @@ func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 // If the request returns a 404 then validateTicketCas1 will be returned.
 func (c *Client) validateTicket(ticket string, service *http.Request) error {
 	if glog.V(2) {
-		serviceUrl, _ := requestURL(service)
+		serviceUrl, _ := requestURL(service, c.fixService)
 		glog.Infof("Validating ticket %v for service %v", ticket, serviceUrl)
 	}
 
