@@ -1,8 +1,8 @@
 package cas
 
 import (
-	"testing"
 	"net/url"
+	"testing"
 )
 
 func TestDefaultURLScheme(t *testing.T) {
