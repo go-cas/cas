@@ -280,7 +280,7 @@ func getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 		//       still be used by Ajax requests.
 		c = &http.Cookie{
 			Name:     sessionCookieName,
-			Value:    newSessionId(),
+			Value:    newSessionID(),
 			MaxAge:   86400,
 			HttpOnly: false,
 		}
@@ -297,7 +297,7 @@ func getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 }
 
 // newSessionId generates a new opaque session identifier for use in the cookie.
-func newSessionId() string {
+func newSessionID() string {
 	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	// generate 64 character string
