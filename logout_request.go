@@ -48,7 +48,7 @@ func parseDate(raw string) (time.Time, error) {
 	return t, nil
 }
 
-func newLogoutRequestId() string {
+func newLogoutRequestID() string {
 	const alphabet = "abcdef0123456789"
 
 	// generate 64 character string
@@ -66,7 +66,7 @@ func xmlLogoutRequest(ticket string) ([]byte, error) {
 	l := &logoutRequest{
 		Version:      "2.0",
 		IssueInstant: time.Now().UTC(),
-		ID:           newLogoutRequestId(),
+		ID:           newLogoutRequestID(),
 		NameID:       "@NOT_USED@",
 		SessionIndex: ticket,
 	}
