@@ -1,10 +1,10 @@
 package cas
 
 import (
-	"testing"
-	"net/http/httptest"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"testing"
 )
 
 func TestRequestGrantingTicket(t *testing.T) {
@@ -88,9 +88,9 @@ func TestRequestServiceTicket(t *testing.T) {
 	}
 
 	restClient := NewRestClient(&RestOptions{
-		CasURL: casUrl,
+		CasURL:     casUrl,
 		ServiceURL: serviceUrl,
-		Client: server.Client(),
+		Client:     server.Client(),
 	})
 
 	st, err := restClient.RequestServiceTicket(TicketGrantingTicket("TGT-abc"))
@@ -113,9 +113,9 @@ func TestRequestServiceTicket(t *testing.T) {
 	}
 
 	restClient = NewRestClient(&RestOptions{
-		CasURL: casUrl,
+		CasURL:     casUrl,
 		ServiceURL: serviceUrl,
-		Client: server.Client(),
+		Client:     server.Client(),
 	})
 
 	_, err = restClient.RequestServiceTicket(TicketGrantingTicket("TGT-abc"))

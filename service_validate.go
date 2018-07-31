@@ -1,12 +1,13 @@
 package cas
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"path"
-	"net/http"
+
 	"github.com/golang/glog"
-	"io/ioutil"
-	"fmt"
 )
 
 func NewServiceTicketValidator(client *http.Client, casUrl *url.URL) *ServiceTicketValidator {
@@ -53,8 +54,8 @@ func (validator *ServiceTicketValidator) ValidateTicket(serviceUrl *url.URL, tic
 
 	if glog.V(2) {
 		glog.Infof("Request %v %v returned %v",
-		r.Method, r.URL,
-		resp.Status)
+			r.Method, r.URL,
+			resp.Status)
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
@@ -62,11 +63,11 @@ func (validator *ServiceTicketValidator) ValidateTicket(serviceUrl *url.URL, tic
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
+	resp.Body.Close()
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cas: validate ticket: %v", string(body))
