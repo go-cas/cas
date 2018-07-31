@@ -10,22 +10,22 @@ func TestDefaultURLScheme(t *testing.T) {
 	scheme := NewDefaultURLScheme(url)
 
 	u, err := scheme.Login()
-	assertUrl(t, "/cas/login", u, err)
+	assertURL(t, "/cas/login", u, err)
 	u, err = scheme.Logout()
-	assertUrl(t, "/cas/logout", u, err)
+	assertURL(t, "/cas/logout", u, err)
 	u, err = scheme.Validate()
-	assertUrl(t, "/cas/validate", u, err)
+	assertURL(t, "/cas/validate", u, err)
 	u, err = scheme.ServiceValidate()
-	assertUrl(t, "/cas/serviceValidate", u, err)
+	assertURL(t, "/cas/serviceValidate", u, err)
 	u, err = scheme.RestGrantingTicket()
-	assertUrl(t, "/cas/v1/tickets", u, err)
+	assertURL(t, "/cas/v1/tickets", u, err)
 	u, err = scheme.RestServiceTicket("TGT-123")
-	assertUrl(t, "/cas/v1/tickets/TGT-123", u, err)
+	assertURL(t, "/cas/v1/tickets/TGT-123", u, err)
 	u, err = scheme.RestLogout("TGT-123")
-	assertUrl(t, "/cas/v1/tickets/TGT-123", u, err)
+	assertURL(t, "/cas/v1/tickets/TGT-123", u, err)
 }
 
-func assertUrl(t *testing.T, expected string, u *url.URL, err error) {
+func assertURL(t *testing.T, expected string, u *url.URL, err error) {
 	if err != nil {
 		t.Fatalf("returned error")
 	}

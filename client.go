@@ -10,7 +10,7 @@ import (
 	"github.com/golang/glog"
 )
 
-// Client configuration options
+// Options are client configuration options
 type Options struct {
 	URL         *url.URL     // URL to the CAS service
 	Store       TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
@@ -179,7 +179,7 @@ func (c *Client) RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
-// RedirectToLogout replies to the request with a redirect URL to authenticate with CAS.
+// RedirectToLogin replies to the request with a redirect URL to authenticate with CAS.
 func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 	u, err := c.LoginUrlForRequest(r)
 	if err != nil {
@@ -196,12 +196,12 @@ func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 
 // validateTicket performs CAS ticket validation with the given ticket and service.
 func (c *Client) validateTicket(ticket string, service *http.Request) error {
-	serviceUrl, err := requestURL(service)
+	serviceURL, err := requestURL(service)
 	if err != nil {
 		return err
 	}
 
-	success, err := c.stValidator.ValidateTicket(serviceUrl, ticket)
+	success, err := c.stValidator.ValidateTicket(serviceURL, ticket)
 	if err != nil {
 		return err
 	}

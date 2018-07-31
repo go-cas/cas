@@ -6,6 +6,8 @@ import (
 	"github.com/golang/glog"
 )
 
+// Handler returns a new http.Handler wrapping the provided http.Handler with
+// the CAS authentication process.
 func (c *Client) Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if glog.V(2) {
