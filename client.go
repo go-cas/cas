@@ -16,7 +16,7 @@ type Options struct {
 	Store       TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
 	Client      *http.Client // Custom http client to allow options for http connections
 	SendService bool         // Custom sendService to determine whether you need to send service param
-	URLScheme 	URLScheme	 // Custom url scheme, can be used to modify the request urls for the client
+	URLScheme   URLScheme    // Custom url scheme, can be used to modify the request urls for the client
 	Cookie      *http.Cookie // http.Cookie options, uses Path, Domain, MaxAge, HttpOnly, & Secure
 }
 
