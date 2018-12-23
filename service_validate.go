@@ -119,7 +119,7 @@ func (validator *ServiceTicketValidator) validateTicketCas1(serviceURL *url.URL,
 	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas")
 
 	if glog.V(2) {
-		glog.Info("Attempting ticket validation with %v", r.URL)
+		glog.Infof("Attempting ticket validation with %v", r.URL)
 	}
 
 	resp, err := validator.client.Do(r)
@@ -128,7 +128,7 @@ func (validator *ServiceTicketValidator) validateTicketCas1(serviceURL *url.URL,
 	}
 
 	if glog.V(2) {
-		glog.Info("Request %v %v returned %v",
+		glog.Infof("Request %v %v returned %v",
 			r.Method, r.URL,
 			resp.Status)
 	}

@@ -171,7 +171,7 @@ func (c *Client) RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if glog.V(2) {
-		glog.Info("Logging out, redirecting client to %v with status %v",
+		glog.Infof("Logging out, redirecting client to %v with status %v",
 			u, http.StatusFound)
 	}
 
