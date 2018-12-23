@@ -26,6 +26,11 @@ func main() {
 	root := chi.NewRouter()
 	root.Use(client.Handler)
 
+	server := &http.Server{
+		Addr:    ":9999",
+		Handler: client.Handle(root),
+	}
+
 	root.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "text/html")
 
@@ -52,7 +57,7 @@ func main() {
 		html.WriteTo(w)
 	})
 
-	if err := http.ListenAndServe(":9999", root); err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }
