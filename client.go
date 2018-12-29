@@ -16,7 +16,7 @@ type Options struct {
 	Store       TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
 	Client      *http.Client // Custom http client to allow options for http connections
 	SendService bool         // Custom sendService to determine whether you need to send service param
-	URLScheme 	URLScheme	 // Custom url scheme, can be used to modify the request urls for the client
+	URLScheme   URLScheme    // Custom url scheme, can be used to modify the request urls for the client
 }
 
 // Client implements the main protocol
@@ -25,7 +25,7 @@ type Client struct {
 	client    *http.Client
 	urlScheme URLScheme
 
-	mu          sync.Mutex
+	mu          sync.RWMutex
 	sessions    map[string]string
 	sendService bool
 
@@ -219,8 +219,10 @@ func (c *Client) validateTicket(ticket string, service *http.Request) error {
 // Validates the ticket if the URL parameter is provided.
 func (c *Client) getSession(w http.ResponseWriter, r *http.Request) {
 	cookie := getCookie(w, r)
-
-	if s, ok := c.sessions[cookie.Value]; ok {
+	c.mu.RLock()
+	s, ok := c.sessions[cookie.Value]
+	c.mu.RUnlock()
+	if ok {
 		if t, err := c.tickets.Read(s); err == nil {
 			if glog.V(1) {
 				glog.Infof("Re-used ticket %s for %s", s, t.User)
@@ -332,7 +334,10 @@ func (c *Client) setSession(id string, ticket string) {
 func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
 	cookie := getCookie(w, r)
 
-	if s, ok := c.sessions[cookie.Value]; ok {
+	c.mu.RLock()
+	s, ok := c.sessions[cookie.Value]
+	c.mu.RUnlock()
+	if ok {
 		if err := c.tickets.Delete(s); err != nil {
 			fmt.Printf("Failed to remove %v from %T: %v\n", cookie.Value, c.tickets, err)
 			if glog.V(2) {
@@ -361,12 +366,14 @@ func (c *Client) deleteSession(id string) {
 // function will notice the session is invalid and revalidate the user.
 func (c *Client) findAndDeleteSessionWithTicket(ticket string) {
 	var id string
+	c.mu.RLock()
 	for s, t := range c.sessions {
 		if t == ticket {
 			id = s
 			break
 		}
 	}
+	c.mu.RUnlock()
 
 	if id == "" {
 		return
