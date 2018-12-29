@@ -92,7 +92,7 @@ func Username(r *http.Request) string {
 }
 
 // Attributes returns the authenticated users attributes.
-func Attributes(r *http.Request) UserAttributes {
+func Attributes(r *http.Request) *UserAttributes {
 	if a := getAuthenticationResponse(r); a != nil {
 		return a.Attributes
 	}
