@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sync"
 
 	"github.com/golang/glog"
 )
 
 // Client configuration options
 type Options struct {
-	URL         *url.URL     // URL to the CAS service
-	Store       TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
-	Client      *http.Client // Custom http client to allow options for http connections
-	SendService bool         // Custom sendService to determine whether you need to send service param
-	URLScheme   URLScheme    // Custom url scheme, can be used to modify the request urls for the client
-	Cookie      *http.Cookie // http.Cookie options, uses Path, Domain, MaxAge, HttpOnly, & Secure
+	URL          *url.URL     // URL to the CAS service
+	Store        TicketStore  // Custom TicketStore, if nil a MemoryStore will be used
+	Client       *http.Client // Custom http client to allow options for http connections
+	SendService  bool         // Custom sendService to determine whether you need to send service param
+	URLScheme    URLScheme    // Custom url scheme, can be used to modify the request urls for the client
+	Cookie       *http.Cookie // http.Cookie options, uses Path, Domain, MaxAge, HttpOnly, & Secure
+	SessionStore SessionStore
 }
 
 // Client implements the main protocol
@@ -27,8 +27,7 @@ type Client struct {
 	urlScheme URLScheme
 	cookie    *http.Cookie
 
-	mu          sync.Mutex
-	sessions    map[string]string
+	sessions    SessionStore
 	sendService bool
 
 	stValidator *ServiceTicketValidator
@@ -45,6 +44,13 @@ func NewClient(options *Options) *Client {
 		tickets = options.Store
 	} else {
 		tickets = &MemoryStore{}
+	}
+
+	var sessions SessionStore
+	if options.SessionStore != nil {
+		sessions = options.SessionStore
+	} else {
+		sessions = NewMemorySessionStore()
 	}
 
 	var urlScheme URLScheme
@@ -77,7 +83,7 @@ func NewClient(options *Options) *Client {
 		client:      client,
 		urlScheme:   urlScheme,
 		cookie:      cookie,
-		sessions:    make(map[string]string),
+		sessions:    sessions,
 		sendService: options.SendService,
 		stValidator: NewServiceTicketValidator(client, options.URL),
 	}
@@ -185,7 +191,7 @@ func (c *Client) RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if glog.V(2) {
-		glog.Info("Logging out, redirecting client to %v with status %v",
+		glog.Infof("Logging out, redirecting client to %v with status %v",
 			u, http.StatusFound)
 	}
 
@@ -234,7 +240,7 @@ func (c *Client) validateTicket(ticket string, service *http.Request) error {
 func (c *Client) getSession(w http.ResponseWriter, r *http.Request) {
 	cookie := c.getCookie(w, r)
 
-	if s, ok := c.sessions[cookie.Value]; ok {
+	if s, ok := c.sessions.Get(cookie.Value); ok {
 		if t, err := c.tickets.Read(s); err == nil {
 			if glog.V(1) {
 				glog.Infof("Re-used ticket %s for %s", s, t.User)
@@ -340,16 +346,14 @@ func (c *Client) setSession(id string, ticket string) {
 		glog.Infof("Recording session, %v -> %v", id, ticket)
 	}
 
-	c.mu.Lock()
-	c.sessions[id] = ticket
-	c.mu.Unlock()
+	c.sessions.Set(id, ticket)
 }
 
 // clearSession removes the session from the client and clears the cookie.
 func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
 	cookie := c.getCookie(w, r)
 
-	if s, ok := c.sessions[cookie.Value]; ok {
+	if s, ok := c.sessions.Get(cookie.Value); ok {
 		if err := c.tickets.Delete(s); err != nil {
 			fmt.Printf("Failed to remove %v from %T: %v\n", cookie.Value, c.tickets, err)
 			if glog.V(2) {
@@ -365,29 +369,5 @@ func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
 
 // deleteSession removes the session from the client
 func (c *Client) deleteSession(id string) {
-	c.mu.Lock()
-	delete(c.sessions, id)
-	c.mu.Unlock()
-}
-
-// findAndDeleteSessionWithTicket removes the session from the client via Single Log Out
-//
-// When a Single Log Out request is received we receive the service ticket identidier. This
-// function loops through the sessions to find the matching session id. Once retrieved the
-// session is removed from the client. When the session is next requested the getSession
-// function will notice the session is invalid and revalidate the user.
-func (c *Client) findAndDeleteSessionWithTicket(ticket string) {
-	var id string
-	for s, t := range c.sessions {
-		if t == ticket {
-			id = s
-			break
-		}
-	}
-
-	if id == "" {
-		return
-	}
-
-	c.deleteSession(id)
+	c.sessions.Delete(id)
 }
