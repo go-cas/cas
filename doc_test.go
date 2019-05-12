@@ -1,22 +1,20 @@
-package cas_test
+package cas
 
 import (
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
-
-	"gopkg.in/cas.v1"
 )
 
 func ExampleRedirectToLogin() {
 	u, _ := url.Parse("https://cas.example.com")
-	c := cas.NewClient(&cas.Options{
+	c := NewClient(&Options{
 		URL: u,
 	})
 
 	h := c.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
-		cas.RedirectToLogin(w, r)
+		RedirectToLogin(w, r)
 	})
 
 	err := http.ListenAndServe(":8080", h)
@@ -27,12 +25,12 @@ func ExampleRedirectToLogin() {
 
 func ExampleRedirectToLogout() {
 	u, _ := url.Parse("https://cas.example.com")
-	c := cas.NewClient(&cas.Options{
+	c := NewClient(&Options{
 		URL: u,
 	})
 
 	h := c.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
-		cas.RedirectToLogout(w, r)
+		RedirectToLogout(w, r)
 	})
 
 	err := http.ListenAndServe(":8080", h)
@@ -43,13 +41,13 @@ func ExampleRedirectToLogout() {
 
 func ExampleIsAuthenticated() {
 	u, _ := url.Parse("https://cas.example.com")
-	c := cas.NewClient(&cas.Options{
+	c := NewClient(&Options{
 		URL: u,
 	})
 
 	h := c.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !cas.IsAuthenticated(r) {
-			cas.RedirectToLogout(w, r)
+		if !IsAuthenticated(r) {
+			RedirectToLogout(w, r)
 		}
 
 		fmt.Fprintf(w, "Hello World\n")
@@ -63,16 +61,16 @@ func ExampleIsAuthenticated() {
 
 func ExampleUsername() {
 	u, _ := url.Parse("https://cas.example.com")
-	c := cas.NewClient(&cas.Options{
+	c := NewClient(&Options{
 		URL: u,
 	})
 
 	h := c.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !cas.IsAuthenticated(r) {
-			cas.RedirectToLogout(w, r)
+		if !IsAuthenticated(r) {
+			RedirectToLogout(w, r)
 		}
 
-		fmt.Fprintf(w, "Hello %s\n", cas.Username(r))
+		fmt.Fprintf(w, "Hello %s\n", Username(r))
 	})
 
 	err := http.ListenAndServe(":8080", h)

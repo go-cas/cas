@@ -1,4 +1,4 @@
-package cas_test
+package cas
 
 import (
 	"bytes"
@@ -9,8 +9,6 @@ import (
 	"net/url"
 
 	"github.com/golang/glog"
-
-	"gopkg.in/cas.v1"
 )
 
 type myHandler struct{}
@@ -40,7 +38,7 @@ func Example() {
 	m.Handle("/", MyHandler)
 
 	url, _ := url.Parse(casURL)
-	client := cas.NewClient(&cas.Options{
+	client := NewClient(&Options{
 		URL: url,
 	})
 
@@ -58,17 +56,17 @@ func Example() {
 
 type templateBinding struct {
 	Username   string
-	Attributes cas.UserAttributes
+	Attributes UserAttributes
 }
 
 func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !cas.IsAuthenticated(r) {
-		cas.RedirectToLogin(w, r)
+	if !IsAuthenticated(r) {
+		RedirectToLogin(w, r)
 		return
 	}
 
 	if r.URL.Path == "/logout" {
-		cas.RedirectToLogout(w, r)
+		RedirectToLogout(w, r)
 		return
 	}
 
@@ -83,8 +81,8 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	binding := &templateBinding{
-		Username:   cas.Username(r),
-		Attributes: cas.Attributes(r),
+		Username:   Username(r),
+		Attributes: Attributes(r),
 	}
 
 	html := new(bytes.Buffer)
