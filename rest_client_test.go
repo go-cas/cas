@@ -1,10 +1,10 @@
 package cas
 
 import (
-	"testing"
-	"net/http/httptest"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"testing"
 )
 
 func TestRequestGrantingTicket(t *testing.T) {
@@ -81,16 +81,15 @@ func TestRequestServiceTicket(t *testing.T) {
 		t.Error("failed to create cas url from test server")
 	}
 
-
 	serviceURL, err := url.Parse("https://hitchhiker.com/heartOfGold")
 	if err != nil {
 		t.Error("failed to create service url")
 	}
 
 	restClient := NewRestClient(&RestOptions{
-		CasURL: casURL,
+		CasURL:     casURL,
 		ServiceURL: serviceURL,
-		Client: server.Client(),
+		Client:     server.Client(),
 	})
 
 	st, err := restClient.RequestServiceTicket(TicketGrantingTicket("TGT-abc"))
@@ -113,9 +112,9 @@ func TestRequestServiceTicket(t *testing.T) {
 	}
 
 	restClient = NewRestClient(&RestOptions{
-		CasURL: casURL,
+		CasURL:     casURL,
 		ServiceURL: serviceURL,
-		Client: server.Client(),
+		Client:     server.Client(),
 	})
 
 	_, err = restClient.RequestServiceTicket(TicketGrantingTicket("TGT-abc"))
