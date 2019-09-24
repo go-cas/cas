@@ -72,11 +72,11 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "text/html")
 
-	tmpl, err := template.New("index.html").Parse(index_html)
+	tmpl, err := template.New("index.html").Parse(indexHTML)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, error_500, err)
+		fmt.Fprintf(w, error500, err)
 		return
 	}
 
@@ -88,14 +88,14 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	html := new(bytes.Buffer)
 	if err := tmpl.Execute(html, binding); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, error_500, err)
+		fmt.Fprintf(w, error500, err)
 		return
 	}
 
 	html.WriteTo(w)
 }
 
-const index_html = `<!DOCTYPE html>
+const indexHTML = `<!DOCTYPE html>
 <html>
   <head>
     <title>Welcome {{.Username}}</title>
@@ -114,7 +114,7 @@ const index_html = `<!DOCTYPE html>
 </html>
 `
 
-const error_500 = `<!DOCTYPE html>
+const error500 = `<!DOCTYPE html>
 <html>
   <head>
     <title>Error 500</title>
