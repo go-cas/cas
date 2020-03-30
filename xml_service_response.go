@@ -2,8 +2,24 @@ package cas
 
 import (
 	"encoding/xml"
+	"net/http"
 	"time"
 )
+
+type xmlTime struct {
+	time.Time
+}
+
+func (xt *xmlTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var value string
+	d.DecodeElement(&value, &start)
+	time, err := http.ParseTime(value)
+	if err != nil {
+		return err
+	}
+	*xt = xmlTime{time}
+	return nil
+}
 
 type xmlServiceResponse struct {
 	XMLName xml.Name `xml:"http://www.yale.edu/tp/cas serviceResponse"`
