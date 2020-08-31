@@ -9,6 +9,12 @@ import (
 	"github.com/golang/glog"
 )
 
+type casVersion string
+
+const CASVERSION1 casVersion = "1.0"
+const CASVERSION2 casVersion = "2.0"
+const CASVERSION3 casVersion = "3.0"
+
 // Options : Client configuration options
 type Options struct {
 	URL          *url.URL     // URL to the CAS service
@@ -18,6 +24,7 @@ type Options struct {
 	URLScheme    URLScheme    // Custom url scheme, can be used to modify the request urls for the client
 	Cookie       *http.Cookie // http.Cookie options, uses Path, Domain, MaxAge, HttpOnly, & Secure
 	SessionStore SessionStore
+	CasVersion   casVersion // cas server version
 }
 
 // Client implements the main protocol
@@ -31,6 +38,8 @@ type Client struct {
 	sendService bool
 
 	stValidator *ServiceTicketValidator
+
+	casVersion casVersion // cas server version
 }
 
 // NewClient creates a Client with the provided Options.
@@ -78,6 +87,13 @@ func NewClient(options *Options) *Client {
 		}
 	}
 
+	var casVersion casVersion
+	if options.CasVersion != CASVERSION1 && options.CasVersion != CASVERSION2 && options.CasVersion != CASVERSION3 {
+		casVersion = CASVERSION2
+	} else {
+		casVersion = options.CasVersion
+	}
+
 	return &Client{
 		tickets:     tickets,
 		client:      client,
@@ -86,6 +102,7 @@ func NewClient(options *Options) *Client {
 		sessions:    sessions,
 		sendService: options.SendService,
 		stValidator: NewServiceTicketValidator(client, options.URL),
+		casVersion:  casVersion,
 	}
 }
 
@@ -170,7 +187,7 @@ func (c *Client) ServiceValidateUrlForRequest(ticket string, r *http.Request) (s
 	if err != nil {
 		return "", err
 	}
-	return c.stValidator.ServiceValidateUrl(service, ticket)
+	return c.stValidator.ServiceValidateUrl(service, ticket, c.casVersion)
 }
 
 // ValidateUrlForRequest determines the CAS validate URL for the ticket and http.Request.
@@ -221,7 +238,7 @@ func (c *Client) validateTicket(ticket string, service *http.Request) error {
 		return err
 	}
 
-	success, err := c.stValidator.ValidateTicket(serviceURL, ticket)
+	success, err := c.stValidator.ValidateTicket(serviceURL, ticket, c.casVersion)
 	if err != nil {
 		return err
 	}
