@@ -353,15 +353,15 @@ func (c *Client) setSession(id string, ticket string) {
 func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
 	cookie := c.getCookie(w, r)
 
-	if s, ok := c.sessions.Get(cookie.Value); ok {
-		if err := c.tickets.Delete(s); err != nil {
+	if serviceTicket, ok := c.sessions.Get(cookie.Value); ok {
+		if err := c.tickets.Delete(serviceTicket); err != nil {
 			fmt.Printf("Failed to remove %v from %T: %v\n", cookie.Value, c.tickets, err)
 			if glog.V(2) {
 				glog.Errorf("Failed to remove %v from %T: %v", cookie.Value, c.tickets, err)
 			}
 		}
 
-		c.deleteSession(s)
+		c.deleteSession(cookie.Value)
 	}
 
 	clearCookie(w, cookie)
