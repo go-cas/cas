@@ -1,4 +1,4 @@
-module gopkg.in/cas.v2
+module github.com/fl0wx/cas
 
 go 1.12
 
