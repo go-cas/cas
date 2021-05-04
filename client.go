@@ -75,6 +75,7 @@ func NewClient(options *Options) *Client {
 			MaxAge:   86400,
 			HttpOnly: false,
 			Secure:   false,
+			SameSite: http.SameSiteDefaultMode,
 		}
 	}
 
@@ -306,6 +307,7 @@ func (c *Client) getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie 
 			MaxAge:   c.cookie.MaxAge,
 			HttpOnly: c.cookie.HttpOnly,
 			Secure:   c.cookie.Secure,
+			SameSite: c.cookie.SameSite,
 		}
 
 		if glog.V(2) {
