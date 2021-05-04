@@ -1,4 +1,4 @@
-module github.com/fl0wx/cas
+module github.com/fl0wx/cas/v2
 
 go 1.12
 
