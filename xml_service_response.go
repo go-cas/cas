@@ -37,11 +37,12 @@ func (p *xmlProxies) AddProxy(proxy string) {
 }
 
 type xmlAttributes struct {
-	XMLName                                xml.Name  `xml:"attributes"`
-	AuthenticationDate                     time.Time `xml:"authenticationDate"`
-	LongTermAuthenticationRequestTokenUsed bool      `xml:"longTermAuthenticationRequestTokenUsed"`
-	IsFromNewLogin                         bool      `xml:"isFromNewLogin"`
-	MemberOf                               []string  `xml:"memberOf"`
+	XMLName                                xml.Name `xml:"attributes"`
+	AuthenticationDate                     time.Time
+	AuthenticationDateStr                  string   `xml:"authenticationDate"`
+	LongTermAuthenticationRequestTokenUsed bool     `xml:"longTermAuthenticationRequestTokenUsed"`
+	IsFromNewLogin                         bool     `xml:"isFromNewLogin"`
+	MemberOf                               []string `xml:"memberOf"`
 	UserAttributes                         *xmlUserAttributes
 	ExtraAttributes                        []*xmlAnyAttribute `xml:",any"`
 }

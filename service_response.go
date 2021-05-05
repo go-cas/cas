@@ -3,12 +3,12 @@ package cas
 import (
 	"encoding/xml"
 	"fmt"
-	"reflect"
-	"strings"
-	"time"
-
 	"github.com/golang/glog"
 	"gopkg.in/yaml.v2"
+	"reflect"
+	"regexp"
+	"strings"
+	"time"
 )
 
 // AuthenticationError Code values
@@ -22,6 +22,10 @@ const (
 	INVALID_SERVICE            = "INVALID_SERVICE"
 	INTERNAL_ERROR             = "INTERNAL_ERROR"
 )
+
+var dateExpr = regexp.MustCompile("\\[.*\\]")
+var date3Layout = "2006-01-02T15:04:05.000+08:00"
+var date2Layout = "2006-01-02T15:04:05Z"
 
 // AuthenticationError represents a CAS AuthenticationFailure response
 type AuthenticationError struct {
@@ -95,7 +99,16 @@ func ParseServiceResponse(data []byte) (*AuthenticationResponse, error) {
 	}
 
 	if a := x.Success.Attributes; a != nil {
-		r.AuthenticationDate = a.AuthenticationDate
+		authenticationDateStr := a.AuthenticationDateStr
+		authenticationDateStr = "2015-02-10T14:28:42Z"
+		var layout string
+		if dateExpr.MatchString(authenticationDateStr) {
+			authenticationDateStr = dateExpr.ReplaceAllString(authenticationDateStr, "")
+			layout = date3Layout
+		} else {
+			layout = date2Layout
+		}
+		r.AuthenticationDate, _ = time.Parse(layout, authenticationDateStr)
 		r.IsRememberedLogin = a.LongTermAuthenticationRequestTokenUsed
 		r.IsNewLogin = a.IsFromNewLogin
 		r.MemberOf = a.MemberOf

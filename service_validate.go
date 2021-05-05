@@ -27,12 +27,16 @@ type ServiceTicketValidator struct {
 // ValidateTicket validates the service ticket for the given server. The method will try to use the service validate
 // endpoint of the cas >= 2 protocol, if the service validate endpoint not available, the function will use the cas 1
 // validate endpoint.
-func (validator *ServiceTicketValidator) ValidateTicket(serviceURL *url.URL, ticket string) (*AuthenticationResponse, error) {
+func (validator *ServiceTicketValidator) ValidateTicket(serviceURL *url.URL, ticket string, casVersion casVersion) (*AuthenticationResponse, error) {
+	if casVersion == CASVERSION1 {
+		return validator.validateTicketCas1(serviceURL, ticket)
+	}
+
 	if glog.V(2) {
 		glog.Infof("Validating ticket %v for service %v", ticket, serviceURL)
 	}
 
-	u, err := validator.ServiceValidateUrl(serviceURL, ticket)
+	u, err := validator.ServiceValidateUrl(serviceURL, ticket, casVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +64,11 @@ func (validator *ServiceTicketValidator) ValidateTicket(serviceURL *url.URL, tic
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return validator.validateTicketCas1(serviceURL, ticket)
+		return nil, fmt.Errorf("cas: url not found(404) :%s", u)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
+
 	resp.Body.Close()
 
 	if err != nil {
@@ -92,8 +97,14 @@ func (validator *ServiceTicketValidator) ValidateTicket(serviceURL *url.URL, tic
 
 // ServiceValidateUrl creates the service validation url for the cas >= 2 protocol.
 // TODO the function is only exposed, because of the clients ServiceValidateUrl function
-func (validator *ServiceTicketValidator) ServiceValidateUrl(serviceURL *url.URL, ticket string) (string, error) {
-	u, err := validator.casURL.Parse(path.Join(validator.casURL.Path, "serviceValidate"))
+func (validator *ServiceTicketValidator) ServiceValidateUrl(serviceURL *url.URL, ticket string, casVersion casVersion) (string, error) {
+	var uri string
+	if casVersion == CASVERSION2 {
+		uri = "serviceValidate"
+	} else if casVersion == CASVERSION3 {
+		uri = "p3/serviceValidate"
+	}
+	u, err := validator.casURL.Parse(path.Join(validator.casURL.Path, uri))
 	if err != nil {
 		return "", err
 	}

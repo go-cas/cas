@@ -24,6 +24,7 @@ type RestOptions struct {
 	ServiceURL *url.URL
 	Client     *http.Client
 	URLScheme  URLScheme
+	CasVersion casVersion
 }
 
 // RestClient uses the rest protocol provided by cas
@@ -32,6 +33,7 @@ type RestClient struct {
 	serviceURL  *url.URL
 	client      *http.Client
 	stValidator *ServiceTicketValidator
+	casversion  casVersion
 }
 
 // NewRestClient creates a new client for the cas rest protocol with the provided options
@@ -53,12 +55,19 @@ func NewRestClient(options *RestOptions) *RestClient {
 	} else {
 		urlScheme = NewDefaultURLScheme(options.CasURL)
 	}
+	var casVersion casVersion
+	if options.CasVersion != CASVERSION1 && options.CasVersion != CASVERSION2 && options.CasVersion != CASVERSION3 {
+		casVersion = CASVERSION2
+	} else {
+		casVersion = options.CasVersion
+	}
 
 	return &RestClient{
 		urlScheme:   urlScheme,
 		serviceURL:  options.ServiceURL,
 		client:      client,
 		stValidator: NewServiceTicketValidator(client, options.CasURL),
+		casversion:  casVersion,
 	}
 }
 
@@ -149,7 +158,7 @@ func (c *RestClient) RequestServiceTicket(tgt TicketGrantingTicket) (ServiceTick
 
 // ValidateServiceTicket validates the service ticket and returns an AuthenticationResponse
 func (c *RestClient) ValidateServiceTicket(st ServiceTicket) (*AuthenticationResponse, error) {
-	return c.stValidator.ValidateTicket(c.serviceURL, string(st))
+	return c.stValidator.ValidateTicket(c.serviceURL, string(st), c.casversion)
 }
 
 // Logout destroys the given granting ticket
