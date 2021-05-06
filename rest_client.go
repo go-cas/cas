@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/golang/glog"
+	"gopkg.in/cas.v2/logs"
 )
 
 // https://apereo.github.io/cas/4.2.x/protocol/REST-Protocol.html
@@ -36,9 +36,7 @@ type RestClient struct {
 
 // NewRestClient creates a new client for the cas rest protocol with the provided options
 func NewRestClient(options *RestOptions) *RestClient {
-	if glog.V(2) {
-		glog.Infof("cas: new rest client with options %v", options)
-	}
+	logs.Infof("cas: new rest client with options %v", options)
 
 	var client *http.Client
 	if options.Client != nil {

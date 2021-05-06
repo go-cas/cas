@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/golang/glog"
+	"gopkg.in/cas.v2/logs"
 )
 
 type myHandler struct{}
@@ -32,7 +32,7 @@ func Example() {
 		return
 	}
 
-	glog.Info("Starting up")
+	logs.Info("Starting up")
 
 	m := http.NewServeMux()
 	m.Handle("/", MyHandler)
@@ -48,10 +48,10 @@ func Example() {
 	}
 
 	if err := server.ListenAndServe(); err != nil {
-		glog.Infof("Error from HTTP Server: %v", err)
+		logs.Infof("Error from HTTP Server: %v", err)
 	}
 
-	glog.Info("Shutting down")
+	logs.Info("Shutting down")
 }
 
 type templateBinding struct {
