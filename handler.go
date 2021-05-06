@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/golang/glog"
+	"gopkg.in/cas.v2/logs"
 )
 
 const (
@@ -20,9 +20,7 @@ type clientHandler struct {
 // ServeHTTP handles HTTP requests, processes CAS requests
 // and passes requests up to its child http.Handler.
 func (ch *clientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if glog.V(2) {
-		glog.Infof("cas: handling %v request for %v", r.Method, r.URL)
-	}
+	logs.Infof("cas: handling %v request for %v", r.Method, r.URL)
 
 	setClient(r, ch.c)
 

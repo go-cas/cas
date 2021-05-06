@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/golang/glog"
+	"gopkg.in/cas.v2/logs"
 )
 
 // NewServiceTicketValidator create a new *ServiceTicketValidator
@@ -28,9 +28,7 @@ type ServiceTicketValidator struct {
 // endpoint of the cas >= 2 protocol, if the service validate endpoint not available, the function will use the cas 1
 // validate endpoint.
 func (validator *ServiceTicketValidator) ValidateTicket(serviceURL *url.URL, ticket string) (*AuthenticationResponse, error) {
-	if glog.V(2) {
-		glog.Infof("Validating ticket %v for service %v", ticket, serviceURL)
-	}
+	logs.Infof("Validating ticket %v for service %v", ticket, serviceURL)
 
 	u, err := validator.ServiceValidateUrl(serviceURL, ticket)
 	if err != nil {
@@ -44,20 +42,16 @@ func (validator *ServiceTicketValidator) ValidateTicket(serviceURL *url.URL, tic
 
 	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas")
 
-	if glog.V(2) {
-		glog.Infof("Attempting ticket validation with %v", r.URL)
-	}
+	logs.Infof("Attempting ticket validation with %v", r.URL)
 
 	resp, err := validator.client.Do(r)
 	if err != nil {
 		return nil, err
 	}
 
-	if glog.V(2) {
-		glog.Infof("Request %v %v returned %v",
-			r.Method, r.URL,
-			resp.Status)
-	}
+	logs.Infof("Request %v %v returned %v",
+		r.Method, r.URL,
+		resp.Status)
 
 	if resp.StatusCode == http.StatusNotFound {
 		return validator.validateTicketCas1(serviceURL, ticket)
@@ -74,18 +68,14 @@ func (validator *ServiceTicketValidator) ValidateTicket(serviceURL *url.URL, tic
 		return nil, fmt.Errorf("cas: validate ticket: %v", string(body))
 	}
 
-	if glog.V(2) {
-		glog.Infof("Received authentication response\n%v", string(body))
-	}
+	logs.Infof("Received authentication response\n%v", string(body))
 
 	success, err := ParseServiceResponse(body)
 	if err != nil {
 		return nil, err
 	}
 
-	if glog.V(2) {
-		glog.Infof("Parsed ServiceResponse: %#v", success)
-	}
+	logs.Infof("Parsed ServiceResponse: %#v", success)
 
 	return success, nil
 }
@@ -119,20 +109,16 @@ func (validator *ServiceTicketValidator) validateTicketCas1(serviceURL *url.URL,
 
 	r.Header.Add("User-Agent", "Golang CAS client gopkg.in/cas")
 
-	if glog.V(2) {
-		glog.Infof("Attempting ticket validation with %v", r.URL)
-	}
+	logs.Infof("Attempting ticket validation with %v", r.URL)
 
 	resp, err := validator.client.Do(r)
 	if err != nil {
 		return nil, err
 	}
 
-	if glog.V(2) {
-		glog.Infof("Request %v %v returned %v",
-			r.Method, r.URL,
-			resp.Status)
-	}
+	logs.Infof("Request %v %v returned %v",
+		r.Method, r.URL,
+		resp.Status)
 
 	data, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
@@ -147,9 +133,7 @@ func (validator *ServiceTicketValidator) validateTicketCas1(serviceURL *url.URL,
 		return nil, fmt.Errorf("cas: validate ticket: %v", body)
 	}
 
-	if glog.V(2) {
-		glog.Infof("Received authentication response\n%v", body)
-	}
+	logs.Infof("Received authentication response\n%v", body)
 
 	if body == "no\n\n" {
 		return nil, nil // not logged in
@@ -159,9 +143,7 @@ func (validator *ServiceTicketValidator) validateTicketCas1(serviceURL *url.URL,
 		User: body[4 : len(body)-1],
 	}
 
-	if glog.V(2) {
-		glog.Infof("Parsed ServiceResponse: %#v", success)
-	}
+	logs.Infof("Parsed ServiceResponse: %#v", success)
 
 	return success, nil
 }

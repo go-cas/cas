@@ -2,11 +2,10 @@ package cas
 
 import (
 	"crypto/rand"
-	"fmt"
 	"net/http"
 	"net/url"
 
-	"github.com/golang/glog"
+	"gopkg.in/cas.v2/logs"
 )
 
 // Options : Client configuration options
@@ -35,9 +34,7 @@ type Client struct {
 
 // NewClient creates a Client with the provided Options.
 func NewClient(options *Options) *Client {
-	if glog.V(2) {
-		glog.Infof("cas: new client with options %v", options)
-	}
+	logs.Infof("cas: new client with options %v", options)
 
 	var tickets TicketStore
 	if options.Store != nil {
@@ -191,10 +188,8 @@ func (c *Client) RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if glog.V(2) {
-		glog.Infof("Logging out, redirecting client to %v with status %v",
-			u, http.StatusFound)
-	}
+	logs.Infof("Logging out, redirecting client to %v with status %v",
+		u, http.StatusFound)
 
 	c.clearSession(w, r)
 	http.Redirect(w, r, u, http.StatusFound)
@@ -208,9 +203,7 @@ func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if glog.V(2) {
-		glog.Infof("Redirecting client to %v with status %v", u, http.StatusFound)
-	}
+	logs.Infof("Redirecting client to %v with status %v", u, http.StatusFound)
 
 	http.Redirect(w, r, u, http.StatusFound)
 }
@@ -243,20 +236,14 @@ func (c *Client) getSession(w http.ResponseWriter, r *http.Request) {
 
 	if s, ok := c.sessions.Get(cookie.Value); ok {
 		if t, err := c.tickets.Read(s); err == nil {
-			if glog.V(1) {
-				glog.Infof("Re-used ticket %s for %s", s, t.User)
-			}
+			logs.Infof("Re-used ticket %s for %s", s, t.User)
 
 			setAuthenticationResponse(r, t)
 			return
 		} else {
-			if glog.V(2) {
-				glog.Infof("Ticket %v not in %T: %v", s, c.tickets, err)
-			}
+			logs.Infof("Ticket %v not in %T: %v", s, c.tickets, err)
 
-			if glog.V(1) {
-				glog.Infof("Clearing ticket %s, no longer exists in ticket store", s)
-			}
+			logs.Infof("Clearing ticket %s, no longer exists in ticket store", s)
 
 			clearCookie(w, cookie)
 		}
@@ -264,29 +251,21 @@ func (c *Client) getSession(w http.ResponseWriter, r *http.Request) {
 
 	if ticket := r.URL.Query().Get("ticket"); ticket != "" {
 		if err := c.validateTicket(ticket, r); err != nil {
-			if glog.V(2) {
-				glog.Infof("Error validating ticket: %v", err)
-			}
+			logs.Infof("Error validating ticket: %v", err)
 			return // allow ServeHTTP()
 		}
 
 		c.setSession(cookie.Value, ticket)
 
 		if t, err := c.tickets.Read(ticket); err == nil {
-			if glog.V(1) {
-				glog.Infof("Validated ticket %s for %s", ticket, t.User)
-			}
+			logs.Infof("Validated ticket %s for %s", ticket, t.User)
 
 			setAuthenticationResponse(r, t)
 			return
 		} else {
-			if glog.V(2) {
-				glog.Infof("Ticket %v not in %T: %v", ticket, c.tickets, err)
-			}
+			logs.Infof("Ticket %v not in %T: %v", ticket, c.tickets, err)
 
-			if glog.V(1) {
-				glog.Infof("Clearing ticket %s, no longer exists in ticket store", ticket)
-			}
+			logs.Infof("Clearing ticket %s, no longer exists in ticket store", ticket)
 
 			clearCookie(w, cookie)
 		}
@@ -310,9 +289,7 @@ func (c *Client) getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie 
 			SameSite: c.cookie.SameSite,
 		}
 
-		if glog.V(2) {
-			glog.Infof("Setting %v cookie with value: %v", cookie.Name, cookie.Value)
-		}
+		logs.Infof("Setting %v cookie with value: %v", cookie.Name, cookie.Value)
 
 		r.AddCookie(cookie) // so we can find it later if required
 		http.SetCookie(w, cookie)
@@ -344,9 +321,7 @@ func clearCookie(w http.ResponseWriter, c *http.Cookie) {
 
 // setSession stores the session id to ticket mapping in the Client.
 func (c *Client) setSession(id string, ticket string) {
-	if glog.V(2) {
-		glog.Infof("Recording session, %v -> %v", id, ticket)
-	}
+	logs.Infof("Recording session, %v -> %v", id, ticket)
 
 	c.sessions.Set(id, ticket)
 }
@@ -357,10 +332,7 @@ func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
 
 	if serviceTicket, ok := c.sessions.Get(cookie.Value); ok {
 		if err := c.tickets.Delete(serviceTicket); err != nil {
-			fmt.Printf("Failed to remove %v from %T: %v\n", cookie.Value, c.tickets, err)
-			if glog.V(2) {
-				glog.Errorf("Failed to remove %v from %T: %v", cookie.Value, c.tickets, err)
-			}
+			logs.Errorf("Failed to remove %v from %T: %v", cookie.Value, c.tickets, err)
 		}
 
 		c.deleteSession(cookie.Value)
