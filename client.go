@@ -81,13 +81,14 @@ func requestURL(r *http.Request) (*url.URL, error) {
 	}
 
 	u.Host = r.Host
-	u.Scheme = "http"
+	u.Scheme = r.URL.Scheme
+	// u.Scheme = "http"
 
-	if scheme := r.Header.Get("X-Forwarded-Proto"); scheme != "" {
-		u.Scheme = scheme
-	} else if r.TLS != nil {
-		u.Scheme = "https"
-	}
+	// if scheme := r.Header.Get("X-Forwarded-Proto"); scheme != "" {
+	// 	u.Scheme = scheme
+	// } else if r.TLS != nil {
+	// 	u.Scheme = "https"
+	// }
 
 	return u, nil
 }
