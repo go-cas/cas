@@ -9,9 +9,12 @@ var (
 )
 
 // sanitisedURL cleans a URL of CAS specific parameters
-func sanitisedURL(unclean *url.URL) *url.URL {
-	// Shouldn't be any errors parsing an existing *url.URL
-	u, _ := url.Parse(unclean.String())
+func sanitisedURL(unclean *url.URL) (*url.URL, error) {
+	// Parse maybe occur errors, cause unclean is dealt with requestURL method
+	u, err := url.Parse(unclean.String())
+	if err != nil {
+		return nil, err
+	}
 	q := u.Query()
 
 	for _, param := range urlCleanParameters {
@@ -19,10 +22,14 @@ func sanitisedURL(unclean *url.URL) *url.URL {
 	}
 
 	u.RawQuery = q.Encode()
-	return u
+	return u, nil
 }
 
 // sanitisedURLString cleans a URL and returns its string value
-func sanitisedURLString(unclean *url.URL) string {
-	return sanitisedURL(unclean).String()
+func sanitisedURLString(unclean *url.URL) (string, error) {
+	u, err := sanitisedURL(unclean)
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
 }
