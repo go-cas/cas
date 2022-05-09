@@ -138,7 +138,11 @@ func (c *Client) LoginUrlForRequest(r *http.Request) (string, error) {
 	}
 
 	q := u.Query()
-	q.Add("service", sanitisedURLString(service))
+	serviceURLStr, err := sanitisedURLString(service)
+	if err != nil {
+		return "", err
+	}
+	q.Add("service", serviceURLStr)
 	u.RawQuery = q.Encode()
 
 	return u.String(), nil
@@ -158,7 +162,11 @@ func (c *Client) LogoutUrlForRequest(r *http.Request) (string, error) {
 		}
 
 		q := u.Query()
-		q.Add("service", sanitisedURLString(service))
+		serviceURLStr, err := sanitisedURLString(service)
+		if err != nil {
+			return "", err
+		}
+		q.Add("service", serviceURLStr)
 		u.RawQuery = q.Encode()
 	}
 
