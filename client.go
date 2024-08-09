@@ -195,7 +195,7 @@ func (c *Client) ValidateUrlForRequest(ticket string, r *http.Request) (string, 
 func (c *Client) RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 	u, err := c.LogoutUrlForRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -212,7 +212,7 @@ func (c *Client) RedirectToLogout(w http.ResponseWriter, r *http.Request) {
 func (c *Client) RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 	u, err := c.LoginUrlForRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
