@@ -99,7 +99,11 @@ func (validator *ServiceTicketValidator) ServiceValidateUrl(serviceURL *url.URL,
 	}
 
 	q := u.Query()
-	q.Add("service", sanitisedURLString(serviceURL))
+	serviceURLStr, err := sanitisedURLString(serviceURL)
+	if err != nil {
+		return "", err
+	}
+	q.Add("service", serviceURLStr)
 	q.Add("ticket", ticket)
 	u.RawQuery = q.Encode()
 
@@ -175,7 +179,11 @@ func (validator *ServiceTicketValidator) ValidateUrl(serviceURL *url.URL, ticket
 	}
 
 	q := u.Query()
-	q.Add("service", sanitisedURLString(serviceURL))
+	serviceURLStr, err := sanitisedURLString(serviceURL)
+	if err != nil {
+		return "", err
+	}
+	q.Add("service", serviceURLStr)
 	q.Add("ticket", ticket)
 	u.RawQuery = q.Encode()
 
